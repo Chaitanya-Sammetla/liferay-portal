@@ -224,7 +224,7 @@
 			<finder-column name="name" />
 		</finder>
 	</entity>
-	<entity local-service="true" name="ObjectEntry" remote-service="true" uuid="true">
+	<entity local-service="true" name="ObjectEntry" remote-service="true" trash-enabled="true" uuid="true">
 
 		<!-- External reference code -->
 
@@ -294,15 +294,10 @@
 			<finder-column name="rootObjectEntryId" />
 			<finder-column comparator="!=" name="status" />
 		</finder>
-		<finder name="ERC_G_C" return-type="ObjectEntry" unique="true">
-			<finder-column name="externalReferenceCode" />
+		<finder name="G_C_OEFI" return-type="Collection">
 			<finder-column name="groupId" />
 			<finder-column name="companyId" />
-		</finder>
-		<finder name="ERC_C_ODI" return-type="ObjectEntry" unique="true">
-			<finder-column name="externalReferenceCode" />
-			<finder-column name="companyId" />
-			<finder-column name="objectDefinitionId" />
+			<finder-column name="objectEntryFolderId" />
 		</finder>
 		<finder name="G_ODI_S" return-type="Collection">
 			<finder-column name="groupId" />
@@ -312,6 +307,12 @@
 		<finder name="U_GtCD_ODI" return-type="Collection">
 			<finder-column name="userId" />
 			<finder-column comparator="&gt;" name="createDate" />
+			<finder-column name="objectDefinitionId" />
+		</finder>
+		<finder name="ERC_G_C_ODI" return-type="ObjectEntry" unique="true">
+			<finder-column name="externalReferenceCode" />
+			<finder-column name="groupId" />
+			<finder-column name="companyId" />
 			<finder-column name="objectDefinitionId" />
 		</finder>
 	</entity>
@@ -406,7 +407,7 @@
 		<finder name="ObjectEntryId" return-type="Collection">
 			<finder-column name="objectEntryId" />
 		</finder>
-		<finder db-index="only" name="C_CD" return-type="Collection">
+		<finder name="C_CD" return-type="Collection">
 			<finder-column name="companyId" />
 			<finder-column name="createDate" />
 		</finder>
@@ -1258,6 +1259,7 @@
 		<exception>ObjectEntryFolderName</exception>
 		<exception>ObjectEntryFolderParentObjectEntryFolderId</exception>
 		<exception>ObjectEntryFolderScope</exception>
+		<exception>ObjectEntryGroupId</exception>
 		<exception>ObjectEntryValues</exception>
 		<exception>ObjectFieldBusinessType</exception>
 		<exception>ObjectFieldDBType</exception>

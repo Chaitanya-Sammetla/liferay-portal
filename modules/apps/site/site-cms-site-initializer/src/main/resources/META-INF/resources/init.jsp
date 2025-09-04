@@ -24,6 +24,9 @@ page import="com.liferay.site.cms.site.initializer.internal.display.context.View
 page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewDashboardDisplayContext" %><%@
 page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewFilesSectionDisplayContext" %><%@
 page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewFolderSectionDisplayContext" %><%@
+page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewHomeQuickActionsDisplayContext" %><%@
+page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewHomeRecentAssetsSectionDisplayContext" %><%@
+page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewHomeSearchBarDisplayContext" %><%@
 page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewRecycleBinSectionDisplayContext" %><%@
 page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewSharedWithMeSectionDisplayContext" %><%@
 page import="com.liferay.site.cms.site.initializer.internal.display.context.ViewSpaceContentsSummarySectionDisplayContext" %><%@
@@ -42,3 +45,23 @@ page import="com.liferay.site.cms.site.initializer.internal.display.context.View
 <liferay-util:html-top>
 	<aui:link href='<%= PortalUtil.getStaticResourceURL(request, PortalUtil.getPathProxy() + application.getContextPath() + "/css/main.css") %>' rel="stylesheet" type="text/css" />
 </liferay-util:html-top>
+
+<aui:script>
+	(function () {
+		const sessionKey = 'com.liferay.site.cms.site.initializer.successMessage';
+
+		const successMessage = Liferay.Util.SessionStorage.getItem(
+			sessionKey,
+			Liferay.Util.SessionStorage.TYPES.NECESSARY
+		);
+
+		if (successMessage) {
+			Liferay.Util.openToast({
+				message: successMessage,
+				type: 'success',
+			});
+
+			Liferay.Util.SessionStorage.removeItem(sessionKey);
+		}
+	})();
+</aui:script>

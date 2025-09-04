@@ -8,13 +8,13 @@ package com.liferay.object.rest.internal.dto.v1_0.converter;
 import com.liferay.asset.kernel.model.AssetTag;
 import com.liferay.asset.kernel.service.AssetCategoryLocalService;
 import com.liferay.asset.kernel.service.AssetTagLocalService;
-import com.liferay.batch.engine.attachment.BatchEngineAttachmentManager;
 import com.liferay.document.library.kernel.model.DLFileEntry;
 import com.liferay.document.library.kernel.model.DLFolder;
 import com.liferay.document.library.kernel.service.DLAppLocalService;
 import com.liferay.document.library.kernel.service.DLAppService;
 import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.document.library.util.DLURLHelper;
+import com.liferay.exportimport.attachment.ExportImportAttachmentManager;
 import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.object.constants.ObjectActionKeys;
@@ -39,6 +39,7 @@ import com.liferay.object.rest.dto.v1_0.AuditFieldChange;
 import com.liferay.object.rest.dto.v1_0.FileEntry;
 import com.liferay.object.rest.dto.v1_0.Folder;
 import com.liferay.object.rest.dto.v1_0.ListEntry;
+import com.liferay.object.rest.dto.v1_0.ObjectDefinitionBrief;
 import com.liferay.object.rest.dto.v1_0.ObjectEntry;
 import com.liferay.object.rest.dto.v1_0.Scope;
 import com.liferay.object.rest.dto.v1_0.Status;
@@ -107,6 +108,8 @@ import com.liferay.portal.vulcan.jaxrs.extension.ExtendedEntity;
 import com.liferay.portal.vulcan.permission.Permission;
 import com.liferay.portal.vulcan.permission.PermissionUtil;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
+import com.liferay.trash.model.TrashEntry;
+import com.liferay.trash.service.TrashEntryLocalService;
 
 import jakarta.ws.rs.core.UriInfo;
 
@@ -243,6 +246,18 @@ public class ObjectEntryDTOConverter
 		ObjectEntry contentObjectEntry = (objectEntryVersion == null) ? null :
 			ObjectEntry.unsafeToDTO(objectEntryVersion.getContent());
 
+		TrashEntry trashEntry = null;
+
+		if (serviceBuilderObjectEntry.getStatus() ==
+				WorkflowConstants.STATUS_IN_TRASH) {
+
+			trashEntry = _trashEntryLocalService.fetchEntry(
+				objectDefinition.getClassName(),
+				serviceBuilderObjectEntry.getObjectEntryId());
+		}
+
+		TrashEntry finalTrashEntry = trashEntry;
+
 		return new ObjectEntry() {
 			{
 				setActions(dtoConverterContext::getActions);
@@ -374,6 +389,25 @@ public class ObjectEntryDTOConverter
 									getObjectDefinitionId()),
 							clonedServiceBuilderObjectEntry);
 					});
+				setRemovedBy(
+					() -> {
+						if (finalTrashEntry != null) {
+							return CreatorUtil.toCreator(
+								_portal, dtoConverterContext.getUriInfo(),
+								_userLocalService.fetchUser(
+									finalTrashEntry.getUserId()));
+						}
+
+						return null;
+					});
+				setRemovedDate(
+					() -> {
+						if (finalTrashEntry != null) {
+							return finalTrashEntry.getCreateDate();
+						}
+
+						return null;
+					});
 				setReviewDate(
 					() -> _getAttribute(
 						objectEntryVersion,
@@ -395,14 +429,18 @@ public class ObjectEntryDTOConverter
 							dtoConverterContext.getLocale(),
 							serviceBuilderObjectEntry.getStatus())));
 				setSystemProperties(
-					() -> _getAttribute(
-						objectEntryVersion,
-						objectEntryVersion -> _toSystemProperties(
-							objectDefinition, objectEntryVersion.getVersion()),
-						serviceBuilderObjectEntry,
-						serviceBuilderObjectEntry -> _toSystemProperties(
-							objectDefinition,
-							serviceBuilderObjectEntry.getVersion())));
+					() -> {
+						if (objectEntryVersion != null) {
+							return _toSystemProperties(
+								dtoConverterContext.getLocale(),
+								objectDefinition,
+								objectEntryVersion.getVersion());
+						}
+
+						return _toSystemProperties(
+							dtoConverterContext.getLocale(), objectDefinition,
+							serviceBuilderObjectEntry.getVersion());
+					});
 				setTaxonomyCategoryBriefs(
 					() -> {
 						if (objectEntryVersion != null) {
@@ -680,7 +718,7 @@ public class ObjectEntryDTOConverter
 					return null;
 				}
 
-				return _batchEngineAttachmentManager.getFileURL(dlFileEntry);
+				return _exportImportAttachmentManager.getFileURL(dlFileEntry);
 			});
 		fileEntry.setFolder(
 			() -> (Folder)NestedFieldsSupplier.supply(
@@ -716,6 +754,7 @@ public class ObjectEntryDTOConverter
 		fileEntry.setLink(
 			() -> LinkUtil.toLink(
 				_dlAppService, dlFileEntry, _dlURLHelper,
+				objectEntry.getGroupId(),
 				objectDefinition.getExternalReferenceCode(),
 				objectEntry.getExternalReferenceCode(), _portal));
 		fileEntry.setMimeType(dlFileEntry::getMimeType);
@@ -890,8 +929,9 @@ public class ObjectEntryDTOConverter
 				List<?> relatedModels =
 					objectRelatedModelsProvider.getRelatedModels(
 						relatedObjectDefinitionGroupId,
-						objectRelationship.getObjectRelationshipId(),
-						primaryKey, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS);
+						objectRelationship.getObjectRelationshipId(), null,
+						primaryKey, null, QueryUtil.ALL_POS, QueryUtil.ALL_POS,
+						null);
 
 				if (relatedObjectDefinition.isUnmodifiableSystemObject()) {
 					SystemObjectDefinitionManager
@@ -1041,6 +1081,10 @@ public class ObjectEntryDTOConverter
 				return null;
 			}
 
+			if (serializable instanceof List) {
+				return serializable;
+			}
+
 			return (Serializable)TransformUtil.transformToList(
 				StringUtil.split(
 					(String)serializable, StringPool.COMMA_AND_SPACE),
@@ -1053,6 +1097,10 @@ public class ObjectEntryDTOConverter
 
 			if (objectField.getListTypeDefinitionId() == 0) {
 				return null;
+			}
+
+			if (serializable instanceof ListEntry) {
+				return serializable;
 			}
 
 			return _getListEntry(
@@ -1186,6 +1234,20 @@ public class ObjectEntryDTOConverter
 		}
 
 		return ExtendedEntity.extend(dto, nestedFieldsRelatedProperties, null);
+	}
+
+	private ObjectDefinitionBrief _toObjectDefinitionBrief(
+		Locale locale, ObjectDefinition objectDefinition) {
+
+		return new ObjectDefinitionBrief() {
+			{
+				setExternalReferenceCode(
+					objectDefinition::getExternalReferenceCode);
+				setLabel(() -> objectDefinition.getLabel(locale));
+				setObjectFolderExternalReferenceCode(
+					objectDefinition::getObjectFolderExternalReferenceCode);
+			}
+		};
 	}
 
 	private Permission[] _toPermissions(
@@ -1350,22 +1412,38 @@ public class ObjectEntryDTOConverter
 	}
 
 	private SystemProperties _toSystemProperties(
-		ObjectDefinition objectDefinition, int versionInt) {
+			Locale locale, ObjectDefinition objectDefinition, int versionInt)
+		throws Exception {
 
-		if (!objectDefinition.isEnableObjectEntryVersioning()) {
+		boolean enableObjectEntryVersioning =
+			objectDefinition.isEnableObjectEntryVersioning();
+		ObjectDefinitionBrief objectDefinitionBrief =
+			NestedFieldsSupplier.supply(
+				"systemProperties.objectDefinitionBrief",
+				nestedField -> _toObjectDefinitionBrief(
+					locale, objectDefinition));
+
+		if (!enableObjectEntryVersioning && (objectDefinitionBrief == null)) {
 			return null;
 		}
 
-		return new SystemProperties() {
-			{
-				setVersion(
-					() -> new Version() {
-						{
-							setNumber(() -> versionInt);
-						}
-					});
-			}
-		};
+		SystemProperties systemProperties = new SystemProperties();
+
+		if (objectDefinitionBrief != null) {
+			systemProperties.setObjectDefinitionBrief(
+				() -> objectDefinitionBrief);
+		}
+
+		if (enableObjectEntryVersioning) {
+			systemProperties.setVersion(
+				() -> new Version() {
+					{
+						setNumber(() -> versionInt);
+					}
+				});
+		}
+
+		return systemProperties;
 	}
 
 	private static final Log _log = LogFactoryUtil.getLog(
@@ -1381,9 +1459,6 @@ public class ObjectEntryDTOConverter
 	private AuditEventLocalService _auditEventLocalService;
 
 	@Reference
-	private BatchEngineAttachmentManager _batchEngineAttachmentManager;
-
-	@Reference
 	private DLAppLocalService _dlAppLocalService;
 
 	@Reference
@@ -1394,6 +1469,9 @@ public class ObjectEntryDTOConverter
 
 	@Reference
 	private DLURLHelper _dlURLHelper;
+
+	@Reference
+	private ExportImportAttachmentManager _exportImportAttachmentManager;
 
 	@Reference
 	private ExtensionProviderRegistry _extensionProviderRegistry;
@@ -1452,6 +1530,9 @@ public class ObjectEntryDTOConverter
 	@Reference
 	private SystemObjectDefinitionManagerRegistry
 		_systemObjectDefinitionManagerRegistry;
+
+	@Reference
+	private TrashEntryLocalService _trashEntryLocalService;
 
 	@Reference
 	private UserLocalService _userLocalService;

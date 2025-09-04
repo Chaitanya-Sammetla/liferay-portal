@@ -15,6 +15,7 @@ import {pagesAdminPagesTest} from '../../../fixtures/pagesAdminPagesTest';
 import {systemSettingsPageTest} from '../../../fixtures/systemSettingsPageTest';
 import {workflowPagesTest} from '../../../fixtures/workflowPagesTest';
 import {SystemSettingsPage} from '../../../pages/configuration-admin-web/SystemSettingsPage';
+import {checkAccessibility} from '../../../utils/checkAccessibility';
 import {clickAndExpectToBeVisible} from '../../../utils/clickAndExpectToBeVisible';
 import fillAndClickOutside from '../../../utils/fillAndClickOutside';
 import {getRandomInt} from '../../../utils/getRandomInt';
@@ -173,6 +174,8 @@ baseTest(
 		await journalEditArticlePage.changeDefaultLanguage('pt_BR');
 
 		const title = getRandomString();
+
+		await page.waitForTimeout(5000);
 
 		await journalEditArticlePage.saveAsDraftWithPermissions(title);
 
@@ -926,7 +929,7 @@ baseTest(
 		await markAsTranslatedButton.click();
 
 		await expect(
-			page.getByRole('heading', {name: 'Mark "ca_ES" as Translated'})
+			page.getByRole('heading', {name: 'Mark ca_ES as Translated'})
 		).toBeVisible();
 
 		await page.getByRole('button', {name: 'Mark as Translated'}).click();
@@ -1360,6 +1363,8 @@ baseTest(
 		});
 
 		await openFieldset(page, 'Fields');
+
+		await checkAccessibility({page, selectors: ['.ddm-label']});
 
 		await expect(textBox).toBeDisabled();
 	}
@@ -1942,5 +1947,43 @@ baseTest(
 
 			await waitForAlert(page);
 		}
+	}
+);
+
+baseTest(
+	'Journal Article Shows Wrong Display Date When Published After Draft',
+	{
+		tag: '@LPD-62472',
+	},
+	async ({journalEditArticlePage, journalPage, page, site}) => {
+		await journalEditArticlePage.goto({siteUrl: site.friendlyUrlPath});
+
+		baseTest.setTimeout(120000);
+
+		await journalEditArticlePage.saveAsDraftWithPermissions(
+			getRandomString()
+		);
+
+		await page.waitForTimeout(50000);
+
+		await page.getByRole('button', {name: 'Publish'}).click();
+
+		await page.waitForTimeout(50000);
+
+		await page.getByRole('menuitem', {name: 'Publish'}).click();
+
+		await journalPage.changeView('table');
+
+		const firstDisplayDateTd = page
+			.locator('td.lfr-display-date-column')
+			.first();
+
+		const spanInsideTd = firstDisplayDateTd.locator('span');
+
+		await spanInsideTd.waitFor({state: 'visible'});
+
+		const displayDateText = await spanInsideTd.textContent();
+
+		expect(displayDateText).not.toBe('1 Minute ago');
 	}
 );

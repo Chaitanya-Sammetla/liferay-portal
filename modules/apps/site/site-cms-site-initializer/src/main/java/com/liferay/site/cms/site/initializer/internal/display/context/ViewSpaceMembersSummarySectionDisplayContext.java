@@ -14,10 +14,14 @@ import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
+import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.HashMapBuilder;
+import com.liferay.portal.kernel.util.WebKeys;
 import com.liferay.site.cms.site.initializer.internal.constants.CMSSpaceConstants;
 import com.liferay.site.cms.site.initializer.internal.util.SpaceSummaryHeaderUtil;
 
@@ -34,6 +38,7 @@ public class ViewSpaceMembersSummarySectionDisplayContext {
 	public ViewSpaceMembersSummarySectionDisplayContext(
 		DepotEntryLocalService depotEntryLocalService, long groupId,
 		GroupLocalService groupLocalService,
+		ModelResourcePermission<Group> groupModelResourcePermission,
 		HttpServletRequest httpServletRequest, Language language,
 		UserGroupLocalService userGroupLocalService,
 		UserLocalService userLocalService) {
@@ -41,10 +46,14 @@ public class ViewSpaceMembersSummarySectionDisplayContext {
 		_depotEntryLocalService = depotEntryLocalService;
 		_groupId = groupId;
 		_groupLocalService = groupLocalService;
+		_groupModelResourcePermission = groupModelResourcePermission;
 		_httpServletRequest = httpServletRequest;
 		_language = language;
 		_userGroupLocalService = userGroupLocalService;
 		_userLocalService = userLocalService;
+
+		_themeDisplay = (ThemeDisplay)httpServletRequest.getAttribute(
+			WebKeys.THEME_DISPLAY);
 	}
 
 	public String getAPIURL(String type) {
@@ -78,6 +87,9 @@ public class ViewSpaceMembersSummarySectionDisplayContext {
 					_getAssetLibraryCreatorUserId());
 				dropdownItem.putData(
 					"assetLibraryId", String.valueOf(_groupId));
+				dropdownItem.putData(
+					"hasAssignMembersPermission",
+					_hasAssignMembersPermission());
 				dropdownItem.putData("title", _getSpaceMembersHeaderTitle());
 				dropdownItem.setLabel(
 					_language.get(_httpServletRequest, "add-members"));
@@ -99,6 +111,9 @@ public class ViewSpaceMembersSummarySectionDisplayContext {
 	public Map<String, Object> getHeaderProps() throws Exception {
 		return SpaceSummaryHeaderUtil.getSpaceSummaryHeaderProps(
 			_httpServletRequest, "view-all-members",
+			HashMapBuilder.<String, Object>put(
+				"hasAssignMembersPermission", _hasAssignMembersPermission()
+			).build(),
 			HashMapBuilder.<String, Object>put(
 				"action", "open-members-modal"
 			).put(
@@ -139,11 +154,19 @@ public class ViewSpaceMembersSummarySectionDisplayContext {
 			StringPool.CLOSE_PARENTHESIS);
 	}
 
+	private boolean _hasAssignMembersPermission() throws Exception {
+		return _groupModelResourcePermission.contains(
+			_themeDisplay.getPermissionChecker(), _groupId,
+			ActionKeys.ASSIGN_MEMBERS);
+	}
+
 	private final DepotEntryLocalService _depotEntryLocalService;
 	private final long _groupId;
 	private final GroupLocalService _groupLocalService;
+	private final ModelResourcePermission<Group> _groupModelResourcePermission;
 	private final HttpServletRequest _httpServletRequest;
 	private final Language _language;
+	private final ThemeDisplay _themeDisplay;
 	private final UserGroupLocalService _userGroupLocalService;
 	private final UserLocalService _userLocalService;
 

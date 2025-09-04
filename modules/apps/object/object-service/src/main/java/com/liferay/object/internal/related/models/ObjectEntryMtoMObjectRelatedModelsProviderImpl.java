@@ -13,8 +13,11 @@ import com.liferay.object.model.ObjectRelationship;
 import com.liferay.object.related.models.ObjectRelatedModelsProvider;
 import com.liferay.object.service.ObjectEntryService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
+import com.liferay.petra.sql.dsl.expression.Predicate;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.search.Sort;
+import com.liferay.portal.kernel.service.ServiceContext;
 
 import java.util.List;
 import java.util.Objects;
@@ -45,8 +48,8 @@ public class ObjectEntryMtoMObjectRelatedModelsProviderImpl
 		throws PortalException {
 
 		List<ObjectEntry> relatedModels = getRelatedModels(
-			groupId, objectRelationshipId, primaryKey, null, QueryUtil.ALL_POS,
-			QueryUtil.ALL_POS);
+			groupId, objectRelationshipId, null, primaryKey, null,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
 
 		if (relatedModels.isEmpty()) {
 			return;
@@ -107,8 +110,8 @@ public class ObjectEntryMtoMObjectRelatedModelsProviderImpl
 	}
 
 	public List<ObjectEntry> getRelatedModels(
-			long groupId, long objectRelationshipId, long primaryKey,
-			String search, int start, int end)
+			long groupId, long objectRelationshipId, Predicate predicate,
+			long primaryKey, String search, int start, int end, Sort[] sorts)
 		throws PortalException {
 
 		ObjectRelationship objectRelationship =
@@ -122,8 +125,8 @@ public class ObjectEntryMtoMObjectRelatedModelsProviderImpl
 
 	@Override
 	public int getRelatedModelsCount(
-			long groupId, long objectRelationshipId, long primaryKey,
-			String search)
+			long groupId, long objectRelationshipId, Predicate predicate,
+			long primaryKey, String search)
 		throws PortalException {
 
 		ObjectRelationship objectRelationship =
@@ -165,6 +168,76 @@ public class ObjectEntryMtoMObjectRelatedModelsProviderImpl
 		return _objectEntryService.getManyToManyObjectEntriesCount(
 			groupId, objectRelationship.getObjectRelationshipId(),
 			objectEntryId, false, objectRelationship.isReverse(), search);
+	}
+
+	@Override
+	public void moveRelatedModelToTrash(
+			long userId, long groupId, long objectRelationshipId,
+			long primaryKey, String deletionType)
+		throws PortalException {
+
+		List<ObjectEntry> relatedModels = getRelatedModels(
+			groupId, objectRelationshipId, null, primaryKey, null,
+			QueryUtil.ALL_POS, QueryUtil.ALL_POS, null);
+
+		if (relatedModels.isEmpty()) {
+			return;
+		}
+
+		ObjectRelationship objectRelationship =
+			_objectRelationshipLocalService.getObjectRelationship(
+				objectRelationshipId);
+
+		if (Objects.equals(
+				deletionType,
+				ObjectRelationshipConstants.DELETION_TYPE_PREVENT) &&
+			!objectRelationship.isReverse()) {
+
+			throw new RequiredObjectRelationshipException(objectRelationship);
+		}
+
+		if (Objects.equals(
+				deletionType,
+				ObjectRelationshipConstants.DELETION_TYPE_CASCADE) &&
+			!objectRelationship.isReverse()) {
+
+			for (ObjectEntry objectEntry : relatedModels) {
+				_objectEntryService.moveObjectEntryToTrash(
+					userId, objectEntry, new ServiceContext());
+			}
+		}
+	}
+
+	@Override
+	public void restoreRelatedModelsFromTrash(
+			long userId, long groupId, long objectRelationshipId,
+			long primaryKey, String deletionType)
+		throws PortalException {
+
+		ObjectRelationship objectRelationship =
+			_objectRelationshipLocalService.getObjectRelationship(
+				objectRelationshipId);
+
+		if (!Objects.equals(
+				deletionType,
+				ObjectRelationshipConstants.DELETION_TYPE_CASCADE) ||
+			objectRelationship.isReverse()) {
+
+			return;
+		}
+
+		for (ObjectEntry objectEntry :
+				getRelatedModels(
+					groupId, objectRelationshipId, null, primaryKey, null,
+					QueryUtil.ALL_POS, QueryUtil.ALL_POS, null)) {
+
+			if (!objectEntry.isInTrash()) {
+				continue;
+			}
+
+			_objectEntryService.restoreObjectEntryFromTrash(
+				userId, objectEntry, new ServiceContext());
+		}
 	}
 
 	private final String _className;

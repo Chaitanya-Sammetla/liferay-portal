@@ -475,6 +475,16 @@ public class ObjectEntryWrapper
 	}
 
 	/**
+	 * Returns the class primary key of the trash entry for this object entry.
+	 *
+	 * @return the class primary key of the trash entry for this object entry
+	 */
+	@Override
+	public long getTrashEntryClassPK() {
+		return model.getTrashEntryClassPK();
+	}
+
+	/**
 	 * Returns the tree path of this object entry.
 	 *
 	 * @return the tree path of this object entry
@@ -610,6 +620,16 @@ public class ObjectEntryWrapper
 	}
 
 	/**
+	 * Returns <code>true</code> if this object entry is in the Recycle Bin.
+	 *
+	 * @return <code>true</code> if this object entry is in the Recycle Bin; <code>false</code> otherwise
+	 */
+	@Override
+	public boolean isInTrash() {
+		return model.isInTrash();
+	}
+
+	/**
 	 * Returns <code>true</code> if this object entry is pending.
 	 *
 	 * @return <code>true</code> if this object entry is pending; <code>false</code> otherwise
@@ -617,6 +637,11 @@ public class ObjectEntryWrapper
 	@Override
 	public boolean isPending() {
 		return model.isPending();
+	}
+
+	@Override
+	public boolean isRootDescendantNode() {
+		return model.isRootDescendantNode();
 	}
 
 	/**

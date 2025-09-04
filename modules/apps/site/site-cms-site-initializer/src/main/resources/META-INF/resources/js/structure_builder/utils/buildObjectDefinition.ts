@@ -43,6 +43,7 @@ export default function buildObjectDefinition({
 		enableIndexSearch: true,
 		enableLocalization: true,
 		enableObjectEntryDraft: true,
+		enableObjectEntrySchedule: true,
 		enableObjectEntryVersioning: true,
 		externalReferenceCode: erc,
 		label,
@@ -57,6 +58,7 @@ export default function buildObjectDefinition({
 		status: {
 			code: status === 'published' ? 0 : 2,
 		},
+		titleObjectFieldName: 'title',
 	};
 
 	if (name) {

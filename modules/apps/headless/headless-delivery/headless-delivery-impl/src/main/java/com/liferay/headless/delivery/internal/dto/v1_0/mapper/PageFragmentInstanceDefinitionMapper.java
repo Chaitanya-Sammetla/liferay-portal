@@ -55,7 +55,6 @@ import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONDeserializer;
-import com.liferay.portal.kernel.json.JSONException;
 import com.liferay.portal.kernel.json.JSONFactory;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.json.JSONUtil;
@@ -217,33 +216,26 @@ public class PageFragmentInstanceDefinitionMapper {
 	private Map<String, Object> _getFragmentConfig(
 		FragmentEntryLink fragmentEntryLink) {
 
-		JSONObject configJSONObject = null;
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
 
-		try {
-			JSONObject editableValuesJSONObject = _jsonFactory.createJSONObject(
-				fragmentEntryLink.getEditableValues());
+		if (editableValuesJSONObject == null) {
+			return Collections.emptyMap();
+		}
 
-			configJSONObject = editableValuesJSONObject.getJSONObject(
-				FragmentEntryProcessorConstants.
-					KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+		JSONObject configJSONObject = editableValuesJSONObject.getJSONObject(
+			FragmentEntryProcessorConstants.
+				KEY_FREEMARKER_FRAGMENT_ENTRY_PROCESSOR);
+
+		if (configJSONObject == null) {
+			configJSONObject =
+				_fragmentEntryConfigurationParser.
+					getConfigurationDefaultValuesJSONObject(
+						fragmentEntryLink.getConfigurationJSONObject());
 
 			if (configJSONObject == null) {
-				configJSONObject =
-					_fragmentEntryConfigurationParser.
-						getConfigurationDefaultValuesJSONObject(
-							fragmentEntryLink.getConfiguration());
-
-				if (configJSONObject == null) {
-					return Collections.emptyMap();
-				}
+				return Collections.emptyMap();
 			}
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
-			}
-
-			return Collections.emptyMap();
 		}
 
 		List<String> excludedFragmentConfigurationFieldNames =
@@ -252,7 +244,7 @@ public class PageFragmentInstanceDefinitionMapper {
 		for (FragmentConfigurationField fragmentConfigurationField :
 				_fragmentEntryConfigurationParser.
 					getFragmentConfigurationFields(
-						fragmentEntryLink.getConfiguration())) {
+						fragmentEntryLink.getConfigurationJSONObject())) {
 
 			if (ArrayUtil.contains(
 					_EXCLUDED_FRAGMENT_CONFIGURATION_FIELD_TYPES,
@@ -279,8 +271,8 @@ public class PageFragmentInstanceDefinitionMapper {
 			}
 			else {
 				value = _fragmentEntryConfigurationParser.getFieldValue(
-					fragmentEntryLink.getConfiguration(),
-					fragmentEntryLink.getEditableValues(),
+					fragmentEntryLink.getConfigurationJSONObject(),
+					fragmentEntryLink.getEditableValuesJSONObject(),
 					LocaleUtil.getMostRelevantLocale(), key);
 			}
 
@@ -342,17 +334,10 @@ public class PageFragmentInstanceDefinitionMapper {
 			return new FragmentField[0];
 		}
 
-		JSONObject editableValuesJSONObject = null;
+		JSONObject editableValuesJSONObject =
+			fragmentEntryLink.getEditableValuesJSONObject();
 
-		try {
-			editableValuesJSONObject = _jsonFactory.createJSONObject(
-				fragmentEntryLink.getEditableValues());
-		}
-		catch (JSONException jsonException) {
-			if (_log.isDebugEnabled()) {
-				_log.debug(jsonException);
-			}
-
+		if (editableValuesJSONObject == null) {
 			return null;
 		}
 

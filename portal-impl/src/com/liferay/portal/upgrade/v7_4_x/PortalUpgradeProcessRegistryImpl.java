@@ -669,6 +669,16 @@ public class PortalUpgradeProcessRegistryImpl
 		upgradeVersionTreeMap.put(
 			new Version(34, 0, 0),
 			new LayoutLayoutSetPrototypeLayoutERCUpgradeProcess());
+
+		upgradeVersionTreeMap.put(new Version(34, 1, 0), new UpgradeDB2());
+
+		upgradeVersionTreeMap.put(
+			new Version(34, 1, 1),
+			UpgradeProcessFactory.runSQL(
+				StringBundler.concat(
+					"update Release_ set verified = [$FALSE$] where ",
+					"servletContextName = '",
+					ReleaseConstants.DEFAULT_SERVLET_CONTEXT_NAME, "'")));
 	}
 
 }

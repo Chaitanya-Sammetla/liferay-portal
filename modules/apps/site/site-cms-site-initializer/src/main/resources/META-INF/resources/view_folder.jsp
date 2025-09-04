@@ -14,12 +14,20 @@ ViewFolderSectionDisplayContext viewFolderSectionDisplayContext = (ViewFolderSec
 <div class="cms-section">
 	<div>
 		<react:component
+			module="{Toolbar} from site-cms-site-initializer"
+			props="<%= viewFolderSectionDisplayContext.getToolbarProps() %>"
+		/>
+	</div>
+
+	<div>
+		<react:component
 			module="{Breadcrumb} from site-cms-site-initializer"
 			props="<%= viewFolderSectionDisplayContext.getBreadcrumbProps() %>"
 		/>
 	</div>
 
 	<frontend-data-set:headless-display
+		additionalProps="<%= viewFolderSectionDisplayContext.getAdditionalProps() %>"
 		apiURL="<%= viewFolderSectionDisplayContext.getAPIURL() %>"
 		bulkActionDropdownItems="<%= viewFolderSectionDisplayContext.getBulkActionDropdownItems() %>"
 		creationMenu="<%= viewFolderSectionDisplayContext.getCreationMenu() %>"
@@ -29,8 +37,9 @@ ViewFolderSectionDisplayContext viewFolderSectionDisplayContext = (ViewFolderSec
 		id="<%= CMSSiteInitializerFDSNames.VIEW_FOLDER %>"
 		itemsPerPage="<%= 20 %>"
 		propsTransformer="{FolderFDSPropsTransformer} from site-cms-site-initializer"
-		selectedItemsKey="id"
+		selectedItemsKey="embedded.id"
 		selectionType="multiple"
+		showSelectAll="<%= true %>"
 		style="fluid"
 	/>
 </div>

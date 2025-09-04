@@ -36,6 +36,7 @@ import com.liferay.client.extension.type.manager.CETManager;
 import com.liferay.client.extension.util.CETUtil;
 import com.liferay.data.engine.rest.dto.v2_0.DataDefinition;
 import com.liferay.data.engine.rest.resource.v2_0.DataDefinitionResource;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
 import com.liferay.depot.service.DepotEntryLocalService;
@@ -1947,6 +1948,7 @@ public class BundleSiteInitializer implements SiteInitializer {
 						jsonObject.getString("name_i18n")),
 					SiteInitializerUtil.toMap(
 						jsonObject.getString("description_i18n")),
+					_getDepotEntryType(jsonObject.getString("type")),
 					serviceContext);
 			}
 
@@ -2862,9 +2864,9 @@ public class BundleSiteInitializer implements SiteInitializer {
 
 				for (int i = 0; i < jsonArray.length(); i++) {
 					_layoutsImporter.importPageElement(
-						draftLayout, layoutStructure,
-						layoutStructure.getMainItemId(), jsonArray.getString(i),
-						i, true, segmentsExperienceId);
+						serviceContext.getUserId(), draftLayout,
+						layoutStructure, layoutStructure.getMainItemId(),
+						jsonArray.getString(i), i, true, segmentsExperienceId);
 				}
 			}
 		}
@@ -5461,6 +5463,22 @@ public class BundleSiteInitializer implements SiteInitializer {
 		}
 
 		return map;
+	}
+
+	private int _getDepotEntryType(String assetLibraryTypeString) {
+		if (Validator.isNull(assetLibraryTypeString) ||
+			StringUtil.equalsIgnoreCase(
+				assetLibraryTypeString, "AssetLibrary")) {
+
+			return DepotConstants.TYPE_ASSET_LIBRARY;
+		}
+		else if (StringUtil.equalsIgnoreCase(assetLibraryTypeString, "Space")) {
+			return DepotConstants.TYPE_SPACE;
+		}
+
+		throw new IllegalArgumentException(
+			"Asset library type " + assetLibraryTypeString +
+				" must be \"AssetLibrary\" or \"Space\"");
 	}
 
 	private Serializable _getExpandoAttributeValue(JSONObject jsonObject)

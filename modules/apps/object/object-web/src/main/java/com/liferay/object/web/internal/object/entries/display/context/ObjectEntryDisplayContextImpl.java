@@ -1093,10 +1093,8 @@ public class ObjectEntryDisplayContextImpl
 
 		if (!readOnly) {
 			readOnly = ObjectFieldUtil.isReadOnly(
-				_ddmExpressionFactory,
-				(objectEntry != null) ? objectEntry.getExternalReferenceCode() :
-					null,
-				objectField, _themeDisplay.getUserId());
+				_ddmExpressionFactory, getObjectEntry(), objectField,
+				_themeDisplay.getUserId());
 		}
 
 		objectField.setReadOnly(String.valueOf(readOnly));
@@ -1167,6 +1165,8 @@ public class ObjectEntryDisplayContextImpl
 					objectField.getBusinessType(),
 					ObjectFieldConstants.BUSINESS_TYPE_ATTACHMENT) &&
 				 (objectEntry != null)) {
+
+			ddmFormField.setProperty("groupId", _getGroupId());
 
 			ObjectDefinition objectDefinition = getObjectDefinition1();
 

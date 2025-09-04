@@ -166,14 +166,6 @@ public class ObjectEntryLocalServiceUtil {
 		return getService().deleteObjectEntry(objectEntry);
 	}
 
-	public static ObjectEntry deleteObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
-		throws PortalException {
-
-		return getService().deleteObjectEntry(
-			externalReferenceCode, companyId, groupId);
-	}
-
 	/**
 	 * @throws PortalException
 	 */
@@ -308,10 +300,10 @@ public class ObjectEntryLocalServiceUtil {
 	}
 
 	public static ObjectEntry fetchObjectEntry(
-		String externalReferenceCode, long objectDefinitionId) {
+		String externalReferenceCode, long groupId, long objectDefinitionId) {
 
 		return getService().fetchObjectEntry(
-			externalReferenceCode, objectDefinitionId);
+			externalReferenceCode, groupId, objectDefinitionId);
 	}
 
 	/**
@@ -500,19 +492,11 @@ public class ObjectEntryLocalServiceUtil {
 	}
 
 	public static ObjectEntry getObjectEntry(
-			String externalReferenceCode, long objectDefinitionId)
+			String externalReferenceCode, long groupId, long objectDefinitionId)
 		throws PortalException {
 
 		return getService().getObjectEntry(
-			externalReferenceCode, objectDefinitionId);
-	}
-
-	public static ObjectEntry getObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
-		throws PortalException {
-
-		return getService().getObjectEntry(
-			externalReferenceCode, companyId, groupId);
+			externalReferenceCode, groupId, objectDefinitionId);
 	}
 
 	/**
@@ -544,23 +528,39 @@ public class ObjectEntryLocalServiceUtil {
 			groupId, objectEntryFolderId);
 	}
 
-	public static List<ObjectEntry> getOneToManyObjectEntries(
-			long groupId, long objectRelationshipId, long primaryKey,
+	public static Map<Object, Long> getOneToManyAggregationCounts(
+			long groupId, long objectDefinitionId, long objectEntryId,
+			long objectRelationshipId, String aggregationTerm,
+			com.liferay.petra.sql.dsl.expression.Predicate predicate,
 			boolean related, String search, int start, int end)
 		throws PortalException {
 
+		return getService().getOneToManyAggregationCounts(
+			groupId, objectDefinitionId, objectEntryId, objectRelationshipId,
+			aggregationTerm, predicate, related, search, start, end);
+	}
+
+	public static List<ObjectEntry> getOneToManyObjectEntries(
+			long groupId, long objectRelationshipId,
+			com.liferay.petra.sql.dsl.expression.Predicate predicate,
+			long primaryKey, boolean related, String search, int start, int end,
+			com.liferay.portal.kernel.search.Sort[] sorts)
+		throws PortalException {
+
 		return getService().getOneToManyObjectEntries(
-			groupId, objectRelationshipId, primaryKey, related, search, start,
-			end);
+			groupId, objectRelationshipId, predicate, primaryKey, related,
+			search, start, end, sorts);
 	}
 
 	public static int getOneToManyObjectEntriesCount(
-			long groupId, long objectRelationshipId, long primaryKey,
-			boolean related, String search)
+			long groupId, long objectRelationshipId,
+			com.liferay.petra.sql.dsl.expression.Predicate predicate,
+			long primaryKey, boolean related, String search)
 		throws PortalException {
 
 		return getService().getOneToManyObjectEntriesCount(
-			groupId, objectRelationshipId, primaryKey, related, search);
+			groupId, objectRelationshipId, predicate, primaryKey, related,
+			search);
 	}
 
 	public static ObjectEntry getOrAddEmptyObjectEntry(
@@ -669,6 +669,33 @@ public class ObjectEntryLocalServiceUtil {
 			userId, objectDefinitionId, primaryKey, values);
 	}
 
+	public static void moveObjectEntriesToTrash(
+			long userId,
+			com.liferay.object.model.ObjectEntryFolder objectEntryFolder,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		getService().moveObjectEntriesToTrash(
+			userId, objectEntryFolder, serviceContext);
+	}
+
+	public static ObjectEntry moveObjectEntryToTrash(
+			long userId, ObjectEntry objectEntry,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().moveObjectEntryToTrash(
+			userId, objectEntry, serviceContext);
+	}
+
+	public static void moveRelatedObjectEntriesToTrash(
+			long groupId, long objectDefinitionId, long primaryKey)
+		throws PortalException {
+
+		getService().moveRelatedObjectEntriesToTrash(
+			groupId, objectDefinitionId, primaryKey);
+	}
+
 	public static ObjectEntry partialUpdateObjectEntry(
 			long userId, long objectEntryId, Map<String, Serializable> values,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -676,6 +703,25 @@ public class ObjectEntryLocalServiceUtil {
 
 		return getService().partialUpdateObjectEntry(
 			userId, objectEntryId, values, serviceContext);
+	}
+
+	public static void restoreObjectEntriesFromTrash(
+			long userId,
+			com.liferay.object.model.ObjectEntryFolder objectEntryFolder,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		getService().restoreObjectEntriesFromTrash(
+			userId, objectEntryFolder, serviceContext);
+	}
+
+	public static ObjectEntry restoreObjectEntryFromTrash(
+			long userId, ObjectEntry objectEntry,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().restoreObjectEntryFromTrash(
+			userId, objectEntry, serviceContext);
 	}
 
 	public static com.liferay.portal.kernel.search.BaseModelSearchResult

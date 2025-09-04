@@ -4,7 +4,9 @@
  */
 
 import {Body, Cell, Head, Row, Table, Text} from '@clayui/core';
+import {WeightFont} from '@clayui/core/lib/typography/Heading';
 import {ClayPaginationBarWithBasicItems} from '@clayui/pagination-bar';
+import {sub} from 'frontend-js-web';
 import React, {useEffect, useMemo, useState} from 'react';
 
 import {InventoryAnalysisDataType} from './InventoryAnalysisCard';
@@ -18,6 +20,22 @@ type TableData = {
 const initialTableValues = {
 	delta: 10,
 	page: 1,
+};
+
+const viewSpecs = {
+	chart: {
+		expandable: 'volume',
+		textWeight: 'semi-bold',
+		titleWidth: '200px',
+		volumeWidth: 'calc(100% - 340px)',
+	},
+	table: {
+		expandable: 'title',
+		percentageWidth: '140px',
+		textWeight: 'normal',
+		titleWidth: 'calc(100% - 340px',
+		volumeWidth: '200px',
+	},
 };
 
 const VolumeChart = ({
@@ -43,7 +61,10 @@ const VolumeChart = ({
 	);
 };
 
-const mapData = (data: InventoryAnalysisDataType): TableData[] => {
+const mapData = (
+	data: InventoryAnalysisDataType,
+	viewType: 'chart' | 'table'
+): TableData[] => {
 	return data.inventoryAnalysisItems.map(({count, title}) => {
 		const percentage = (count / data.totalCount) * 100;
 
@@ -52,7 +73,14 @@ const mapData = (data: InventoryAnalysisDataType): TableData[] => {
 		return {
 			percentage,
 			title,
-			volume: <VolumeChart percentage={percentage} volume={count} />,
+			volume:
+				viewType === 'chart' ? (
+					<VolumeChart percentage={percentage} volume={count} />
+				) : (
+					<Text size={3} weight="normal">
+						{count}
+					</Text>
+				),
 		};
 	});
 };
@@ -60,11 +88,13 @@ const mapData = (data: InventoryAnalysisDataType): TableData[] => {
 interface IPaginatedTable {
 	currentStructureTypeLabel: string;
 	inventoryAnalysisData: InventoryAnalysisDataType | undefined;
+	viewType: 'chart' | 'table';
 }
 
 const PaginatedTable: React.FC<IPaginatedTable> = ({
 	currentStructureTypeLabel,
 	inventoryAnalysisData,
+	viewType,
 }) => {
 	const [delta, setDelta] = useState(initialTableValues.delta);
 	const [page, setPage] = useState(initialTableValues.page);
@@ -79,11 +109,11 @@ const PaginatedTable: React.FC<IPaginatedTable> = ({
 
 	useEffect(() => {
 		if (inventoryAnalysisData) {
-			setTableData(mapData(inventoryAnalysisData));
+			setTableData(mapData(inventoryAnalysisData, viewType));
 			setPage(initialTableValues.page);
 			setDelta(initialTableValues.delta);
 		}
-	}, [inventoryAnalysisData]);
+	}, [inventoryAnalysisData, viewType]);
 
 	const handlePageChange = (newPage: number) => {
 		setPage(newPage);
@@ -97,7 +127,7 @@ const PaginatedTable: React.FC<IPaginatedTable> = ({
 	return (
 		<div>
 			<Table
-				borderless
+				borderless={viewType === 'chart'}
 				columnsVisibility={false}
 				hover={false}
 				striped={false}
@@ -105,25 +135,30 @@ const PaginatedTable: React.FC<IPaginatedTable> = ({
 				<Head
 					items={[
 						{
+							align: 'left',
 							id: 'title',
-							name: Liferay.Language.get('structure-label'),
-							width: '200px',
+							name: Liferay.Language.get(
+								currentStructureTypeLabel
+							),
+							width: viewSpecs[viewType].titleWidth,
 						},
 						{
+							align: viewType === 'chart' ? 'left' : 'right',
 							id: 'volume',
 							name: Liferay.Language.get('assets-volume'),
-							width: 'calc(100% - 310px)',
+							width: viewSpecs[viewType].volumeWidth,
 						},
 						{
+							align: 'right',
 							id: 'percentage',
 							name: Liferay.Language.get('%-of-assets'),
-							width: '110px',
+							width: '140px',
 						},
 					]}
 				>
 					{(column) => (
 						<Cell
-							expanded={column.id === 'volume'}
+							align={column.align as 'left' | 'right'}
 							key={column.id}
 							width={column.width}
 						>
@@ -135,19 +170,51 @@ const PaginatedTable: React.FC<IPaginatedTable> = ({
 				<Body items={displayedItems}>
 					{(row) => (
 						<Row>
-							<Cell width="10%">
+							<Cell
+								className={
+									viewType === 'chart' ? 'border-0' : ''
+								}
+								expanded={
+									viewSpecs[viewType].expandable === 'volume'
+								}
+								width="10%"
+							>
 								<Text size={3} weight="semi-bold">
 									{row['title'] ||
-										`No ${currentStructureTypeLabel}`}
+										sub(
+											Liferay.Language.get('no-x'),
+											currentStructureTypeLabel
+										)}
 								</Text>
 							</Cell>
 
-							<Cell expanded width="80%">
+							<Cell
+								align="right"
+								className={
+									viewType === 'chart' ? 'border-0' : ''
+								}
+								expanded={
+									viewSpecs[viewType].expandable === 'volume'
+								}
+								width="80%"
+							>
 								{row['volume']}
 							</Cell>
 
-							<Cell align="left" width="10%">
-								<Text size={3} weight="semi-bold">
+							<Cell
+								align="right"
+								className={
+									viewType === 'chart' ? 'border-0' : ''
+								}
+								width="10%"
+							>
+								<Text
+									size={3}
+									weight={
+										viewSpecs[viewType]
+											.textWeight as WeightFont
+									}
+								>
 									{`${row['percentage'].toFixed(2)}%`}
 								</Text>
 							</Cell>

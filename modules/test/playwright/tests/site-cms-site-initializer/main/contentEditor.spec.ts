@@ -22,8 +22,8 @@ const test = mergeTests(
 	cmsPagesTest,
 	dataApiHelpersTest,
 	featureFlagsTest({
-		'LPD-11232': {enabled: true},
 		'LPD-17564': {enabled: true},
+		'LPS-179669': {enabled: true},
 	}),
 	loginTest(),
 	pageEditorPagesTest,
@@ -142,7 +142,7 @@ test(
 
 		// Create new structure for Default space
 
-		await structureBuilderPage.createStructure();
+		await structureBuilderPage.goToCreateStructure();
 
 		await structureBuilderPage.selectSpaces(['Default']);
 
@@ -504,3 +504,149 @@ test.describe('Comments Panel', () => {
 		});
 	});
 });
+
+test.describe('Schedule Panel', () => {
+	test(
+		'Do not allow publishing if there are errors in the fields',
+		{tag: '@LPD-62099'},
+		async ({contentsPage, page}) => {
+
+			// Create a Blog
+
+			await contentsPage.goto();
+
+			await contentsPage.createContent('Basic Web Content');
+
+			await contentsPage.openSidePanel('Schedule');
+
+			const title = getRandomString();
+
+			await page.getByPlaceholder('New Basic Web Content').fill(title);
+
+			// Fill the input with an error
+
+			const expireCheckbox = page.getByLabel('Never Expire').first();
+
+			await expireCheckbox.uncheck();
+
+			const expirationDateField = page.getByRole('textbox', {
+				name: 'Expiration Date',
+			});
+
+			await expirationDateField.fill('05/12/2025');
+
+			// Try to publish the content
+
+			await contentsPage.publishButton.click();
+
+			const error = page.getByText('The field value is invalid.');
+
+			await expect(error).toBeVisible();
+
+			await expect(expirationDateField).toBeFocused();
+
+			// Close the panel and try to publish again
+
+			await page.getByTitle('Close', {exact: true}).click();
+
+			await expect(error).not.toBeVisible();
+
+			await contentsPage.publishButton.click();
+
+			await expect(error).toBeVisible();
+
+			await expect(expirationDateField).toBeFocused();
+
+			// Set a valid date and publish
+
+			const nextYear = new Date().getFullYear() + 1;
+
+			await expirationDateField.fill(`05/12/${nextYear} 12:55 PM`);
+
+			await expect(error).not.toBeVisible();
+
+			await contentsPage.publishButton.click();
+
+			await expect(
+				page.locator('.table-list-title a', {hasText: title})
+			).toBeAttached();
+
+			// Delete content
+
+			await contentsPage.deleteContent(title);
+		}
+	);
+});
+
+test.describe('Categorization Panel', () => {
+	test(
+		'Add tags to content',
+		{tag: '@LPD-62047'},
+		async ({contentsPage, page, tagsPage}) => {
+
+			// Create a content
+
+			await contentsPage.goto();
+
+			await contentsPage.createContent('Basic Web Content');
+
+			await contentsPage.openSidePanel('Categorization');
+
+			// Add a new tag
+
+			const tagsAutocomplete = page.getByPlaceholder('Add tag');
+
+			const tagName = getRandomString();
+
+			await tagsAutocomplete.fill(tagName);
+
+			await page.getByRole('option', {name: 'Create New Tag:'}).click();
+
+			await expect(
+				page.locator('.label-item', {hasText: tagName})
+			).toBeAttached();
+
+			// Delete tag
+
+			await tagsPage.goto();
+
+			await tagsPage.deleteTag(tagName);
+		}
+	);
+});
+
+test(
+	'Check that the content shifts when the side panel opens',
+	{tag: '@LPD-62067'},
+	async ({contentsPage, page}) => {
+		const getContainerRightPadding = async () =>
+			page
+				.locator('#content')
+				.evaluate(
+					(element: HTMLDivElement) =>
+						window.getComputedStyle(element).paddingRight
+				);
+
+		// Create new Knowledge Base content
+
+		await contentsPage.goto();
+
+		await contentsPage.createContent('Knowledge Base');
+
+		// Compare the container padding when the side panel is closed and opened
+
+		let containerWidth = await getContainerRightPadding();
+
+		await contentsPage.openSidePanel();
+
+		await page
+			.locator(
+				'.content-editor__side-panel .sidebar:not(.c-slideout-transition)'
+			)
+			.waitFor();
+
+		containerWidth = await getContainerRightPadding();
+
+		expect(containerWidth).toBe('280px');
+	}
+);

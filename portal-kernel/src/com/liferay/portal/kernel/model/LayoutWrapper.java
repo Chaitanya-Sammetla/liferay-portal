@@ -1265,11 +1265,6 @@ public class LayoutWrapper
 		return model.getScopeGroup();
 	}
 
-	@Override
-	public String getSourcePrototypeLayoutUuid() {
-		return model.getSourcePrototypeLayoutUuid();
-	}
-
 	/**
 	 * Returns the status of this layout.
 	 *
@@ -1888,6 +1883,11 @@ public class LayoutWrapper
 	@Override
 	public boolean isTypeEmbedded() {
 		return model.isTypeEmbedded();
+	}
+
+	@Override
+	public boolean isTypeEmpty() {
+		return model.isTypeEmpty();
 	}
 
 	@Override

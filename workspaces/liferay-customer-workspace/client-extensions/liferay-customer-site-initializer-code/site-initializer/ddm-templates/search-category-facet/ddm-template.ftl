@@ -36,7 +36,10 @@
 		<#assign displayableCategories = displayableCategories + [item] />
 	</#list>
 
-	<#assign panelId = stringUtil.replace(title, ' ', '') />
+	<#assign
+		displayableCategories = displayableCategories?sort_by("name")
+		panelId = stringUtil.replace(title, ' ', '')
+	/>
 
 	<@liferay_ui["panel-container"]
 		extended=true
@@ -273,42 +276,52 @@
 		}
 	}
 
+	function ${namespace}deselectChildren(termId) {
+		const children = document.querySelectorAll(
+			'input.facet-term[data-parent-id="' + termId + '"]:checked'
+		);
+
+		children.forEach((child) => {
+			child.checked = false;
+
+			const childTermId = child.getAttribute('data-term-id');
+
+			${namespace}deselectChildren(childTermId);
+		});
+	}
+
+	function ${namespace}deselectParents(parentId) {
+		if (!parentId || parentId === '0') {
+			return;
+		}
+
+		const parentCheckbox = document.querySelector(
+			'input.facet-term[data-term-id="' + parentId + '"]:checked'
+		);
+
+		if (parentCheckbox) {
+			parentCheckbox.checked = false;
+
+			const grandParentId = parentCheckbox.getAttribute('data-parent-id');
+
+			${namespace}deselectParents(grandParentId);
+		}
+	}
+
 	function ${namespace}handleSelection(event) {
 		event.preventDefault();
 
 		const checkbox = event.target;
-		const selectedCheckboxes = document.querySelectorAll('.facet-term');
 
-		const parentId = checkbox.getAttribute('data-parent-id');
+		if (checkbox.checked) {
+			const parentId = checkbox.getAttribute('data-parent-id');
 
-		if (checkbox.checked && parentId) {
-			selectedCheckboxes.forEach(parentCheckbox => {
-				if (parentCheckbox.getAttribute('data-term-id') === parentId && parentCheckbox.checked) {
-					parentCheckbox.checked = false;
-
-					const changeEvent = new Event('change', {
-						bubbles: true,
-						cancelable: true
-					});
-
-					parentCheckbox.dispatchEvent(changeEvent);
-				}
-			});
-		} else if (!checkbox.checked) {
+			${namespace}deselectParents(parentId);
+		}
+		else {
 			const termId = checkbox.getAttribute('data-term-id');
 
-			selectedCheckboxes.forEach(childCheckbox => {
-				if (childCheckbox.checked && (childCheckbox.getAttribute('data-parent-id') === termId)) {
-					childCheckbox.checked = false;
-
-					const changeEvent = new Event('change', {
-						bubbles: true,
-						cancelable: true
-					});
-
-					childCheckbox.dispatchEvent(changeEvent);
-				}
-			});
+			${namespace}deselectChildren(termId);
 		}
 
 		Liferay.Search.FacetUtil.changeSelection(event);

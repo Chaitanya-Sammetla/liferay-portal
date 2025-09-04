@@ -17,7 +17,7 @@ import {useIsMounted} from '@liferay/frontend-js-react-web';
 import {FDSTableCellHTMLElementBuilderArgs} from '@liferay/js-api/data-set';
 import classNames from 'classnames';
 import {ClientExtension} from 'frontend-js-components-web';
-import {throttle} from 'frontend-js-web';
+import {getObjectValueFromPath, throttle} from 'frontend-js-web';
 import React, {useContext, useEffect, useMemo, useRef, useState} from 'react';
 
 import FrontendDataSetContext, {
@@ -35,7 +35,6 @@ import {
 	ILocalizedItemDetails,
 	getLocalizedValue,
 } from '../../utils/getLocalizedValue';
-import getSelectedItemValue from '../../utils/getSelectedItemValue';
 import {getInputRendererById} from '../../utils/renderer';
 import {
 	ESelectionTrigger,
@@ -122,7 +121,9 @@ const Head = ({
 								textValue="select-item"
 								width="51px"
 							>
-								{null}
+								<span className="sr-only">
+									{Liferay.Language.get('item-selection')}
+								</span>
 							</ClayTableCell>
 						);
 					}
@@ -133,10 +134,16 @@ const Head = ({
 						className={getCellColumnClassName(field.fieldName)}
 						columnName={field.fieldName}
 						key={field.fieldName}
-						sortable={(field as any).sortable}
-						textValue="select"
+						sortable={field.sortable}
+						textValue={field.fieldName}
 					>
-						{(field as any).label}
+						{field.label || (
+							<span className="sr-only">
+								{field.fieldName === 'select'
+									? Liferay.Language.get('item-selection')
+									: field.fieldName}
+							</span>
+						)}
 					</HeadCellResizer>
 				);
 			}}
@@ -149,6 +156,7 @@ const Row = ({
 	columns,
 	item,
 	itemInlineChanges,
+	items,
 	itemsActions,
 	onItemSelectionChange,
 	selectionType,
@@ -158,6 +166,7 @@ const Row = ({
 	columns: Array<Field>;
 	item: any;
 	itemInlineChanges?: {[key: string]: any};
+	items: any[];
 	itemsActions: Array<IItemsActions>;
 	onItemSelectionChange: Function;
 	selectionType?: string;
@@ -169,7 +178,7 @@ const Row = ({
 	const SelectionComponent =
 		selectionType === 'multiple' ? ClayCheckbox : ClayRadio;
 
-	const id = getSelectedItemValue({item, path: selectedItemsKey});
+	const id = getObjectValueFromPath({object: item, path: selectedItemsKey});
 
 	return (
 		<ClayTableRowOptionalDropTarget
@@ -203,6 +212,7 @@ const Row = ({
 											}
 											itemData={item}
 											itemId={id}
+											items={items}
 											onItemSelectionChange={
 												onItemSelectionChange
 											}
@@ -370,8 +380,8 @@ const Body = ({
 									(element: any) =>
 										String(element) ===
 										String(
-											getSelectedItemValue({
-												item,
+											getObjectValueFromPath({
+												object: item,
 												path: selectedItemsKey,
 											})
 										)
@@ -380,6 +390,7 @@ const Body = ({
 							columns={columns}
 							item={item}
 							itemInlineChanges={itemInlineChanges}
+							items={items}
 							itemsActions={itemsActions}
 							onItemSelectionChange={onItemSelectionChange}
 							selectionType={selectionType}
@@ -829,6 +840,9 @@ const Table = ({
 					columnsVisibility: Liferay.Language.get(
 						'manage-columns-visibility'
 					),
+					columnsVisibilityCell: itemsActions?.length
+						? Liferay.Language.get('item-actions')
+						: undefined,
 					columnsVisibilityDescription: Liferay.Language.get(
 						'at-least-one-column-must-remain-visible'
 					),

@@ -5,6 +5,7 @@
 
 package com.liferay.portal.upgrade.data.cleanup;
 
+import com.liferay.portal.db.index.PrimaryKeyUpdaterUtil;
 import com.liferay.portal.events.StartupHelperUtil;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.log.Log;
@@ -71,16 +72,39 @@ public class DataCleanupPreupgradeProcessSuite {
 		}
 	}
 
+	public List<DataCleanupPreupgradeProcess>
+		getDataCleanupPreupgradeProcesses() {
+
+		return _dataCleanupPreupgradeProcesses;
+	}
+
 	private static final Log _log = LogFactoryUtil.getLog(
 		DataCleanupPreupgradeProcessSuite.class);
 
 	private final List<DataCleanupPreupgradeProcess>
 		_dataCleanupPreupgradeProcesses = ListUtil.fromArray(
 
-			// Company, then group, and then the rest for optimal performance
-			// since cleaning companies will remove its groups and related data
+			// Recreate missing primary keys so that later upgrade processes can
+			// use them
+
+			new DataCleanupPreupgradeProcess() {
+
+				@Override
+				protected void doUpgrade() throws Exception {
+					PrimaryKeyUpdaterUtil.updateAllPrimaryKeys();
+				}
+
+			},
+
+			// Company, then user, then group, and then the rest for optimal
+			// performance since cleaning companies will remove its users,
+			// groups, and related data
 
 			new CompanyDataCleanupPreupgradeProcess(),
+
+			//
+
+			new UserDataCleanupPreupgradeProcess(),
 
 			//
 
@@ -88,8 +112,11 @@ public class DataCleanupPreupgradeProcessSuite {
 
 			//
 
+			new AnalyticsMessageDataCleanupPreupgradeProcess(),
+			new ConfigurationDataCleanupPreupgradeProcess(),
 			new DDMStructureDataCleanupPreupgradeProcess(),
 			new DLFileEntryDataCleanupPreupgradeProcess(),
+			new NullUnicodeContentDataCleanupPreupgradeProcess(),
 			new QuartzJobDetailsDataCleanupPreupgradeProcess());
 
 }

@@ -93,7 +93,7 @@ public class OrderActionsFragmentRenderer implements FragmentRenderer {
 	}
 
 	@Override
-	public String getConfiguration(
+	public JSONObject getConfigurationJSONObject(
 		FragmentRendererContext fragmentRendererContext) {
 
 		try {
@@ -111,7 +111,7 @@ public class OrderActionsFragmentRenderer implements FragmentRenderer {
 				_log.debug(jsonException);
 			}
 
-			return StringPool.BLANK;
+			return null;
 		}
 	}
 
@@ -182,7 +182,8 @@ public class OrderActionsFragmentRenderer implements FragmentRenderer {
 			httpServletRequest.setAttribute(
 				"liferay-commerce:order-actions:dropdownItems",
 				_getDropdownItems(
-					commerceOrder, fragmentEntryLink.getEditableValues(),
+					commerceOrder,
+					fragmentEntryLink.getEditableValuesJSONObject(),
 					fragmentRendererContext, httpServletRequest));
 
 			httpServletRequest.setAttribute(
@@ -218,7 +219,8 @@ public class OrderActionsFragmentRenderer implements FragmentRenderer {
 					_friendlyURLSeparatorProviderSnapshot.get(),
 					httpServletRequest));
 
-			if (FeatureFlagManagerUtil.isEnabled("LPD-10562") &&
+			if (FeatureFlagManagerUtil.isEnabled(
+					_portal.getCompanyId(httpServletRequest), "LPD-10562") &&
 				(commerceOrder.getOrderStatus() ==
 					CommerceOrderConstants.ORDER_STATUS_COMPLETED)) {
 
@@ -249,7 +251,7 @@ public class OrderActionsFragmentRenderer implements FragmentRenderer {
 	}
 
 	private List<DropdownItem> _getDropdownItems(
-		CommerceOrder commerceOrder, String editableValues,
+		CommerceOrder commerceOrder, JSONObject editableValuesJSONObject,
 		FragmentRendererContext fragmentRendererContext,
 		HttpServletRequest httpServletRequest) {
 
@@ -267,8 +269,9 @@ public class OrderActionsFragmentRenderer implements FragmentRenderer {
 
 					if (!GetterUtil.getBoolean(
 							_fragmentEntryConfigurationParser.getFieldValue(
-								getConfiguration(fragmentRendererContext),
-								editableValues,
+								getConfigurationJSONObject(
+									fragmentRendererContext),
+								editableValuesJSONObject,
 								fragmentRendererContext.getLocale(),
 								StringUtil.removeSubstring(
 									commerceOrderImporterType.getKey(),
@@ -319,7 +322,8 @@ public class OrderActionsFragmentRenderer implements FragmentRenderer {
 
 		if (GetterUtil.getBoolean(
 				_fragmentEntryConfigurationParser.getFieldValue(
-					getConfiguration(fragmentRendererContext), editableValues,
+					getConfigurationJSONObject(fragmentRendererContext),
+					editableValuesJSONObject,
 					fragmentRendererContext.getLocale(), "printOrder"),
 				true)) {
 

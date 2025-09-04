@@ -69,14 +69,6 @@ public class ObjectEntryServiceUtil {
 		return getService().deleteObjectEntry(objectEntryId);
 	}
 
-	public static ObjectEntry deleteObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
-		throws PortalException {
-
-		return getService().deleteObjectEntry(
-			externalReferenceCode, companyId, groupId);
-	}
-
 	public static ObjectEntry expireObjectEntry(
 			long userId, long objectEntryId,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -98,6 +90,14 @@ public class ObjectEntryServiceUtil {
 		throws PortalException {
 
 		return getService().fetchObjectEntry(objectEntryId);
+	}
+
+	public static ObjectEntry fetchObjectEntry(
+			String externalReferenceCode, long groupId, long objectDefinitionId)
+		throws PortalException {
+
+		return getService().fetchObjectEntry(
+			externalReferenceCode, groupId, objectDefinitionId);
 	}
 
 	public static List<ObjectEntry> getManyToManyObjectEntries(
@@ -135,38 +135,43 @@ public class ObjectEntryServiceUtil {
 	}
 
 	public static ObjectEntry getObjectEntry(
-			String externalReferenceCode, long objectDefinitionId)
+			String externalReferenceCode, long groupId, long objectDefinitionId)
 		throws PortalException {
 
 		return getService().getObjectEntry(
-			externalReferenceCode, objectDefinitionId);
-	}
-
-	public static ObjectEntry getObjectEntry(
-			String externalReferenceCode, long companyId, long groupId)
-		throws PortalException {
-
-		return getService().getObjectEntry(
-			externalReferenceCode, companyId, groupId);
+			externalReferenceCode, groupId, objectDefinitionId);
 	}
 
 	public static List<ObjectEntry> getOneToManyObjectEntries(
-			long groupId, long objectRelationshipId, long primaryKey,
-			boolean related, String search, int start, int end)
+			long groupId, long objectRelationshipId,
+			com.liferay.petra.sql.dsl.expression.Predicate predicate,
+			long primaryKey, boolean related, String search, int start, int end,
+			com.liferay.portal.kernel.search.Sort[] sorts)
 		throws PortalException {
 
 		return getService().getOneToManyObjectEntries(
-			groupId, objectRelationshipId, primaryKey, related, search, start,
-			end);
+			groupId, objectRelationshipId, predicate, primaryKey, related,
+			search, start, end, sorts);
 	}
 
 	public static int getOneToManyObjectEntriesCount(
-			long groupId, long objectRelationshipId, long primaryKey,
-			boolean related, String search)
+			long groupId, long objectRelationshipId,
+			com.liferay.petra.sql.dsl.expression.Predicate predicate,
+			long primaryKey, boolean related, String search)
 		throws PortalException {
 
 		return getService().getOneToManyObjectEntriesCount(
-			groupId, objectRelationshipId, primaryKey, related, search);
+			groupId, objectRelationshipId, predicate, primaryKey, related,
+			search);
+	}
+
+	public static ObjectEntry getOrAddEmptyObjectEntry(
+			String externalReferenceCode, long groupId, long userId,
+			long objectDefinitionId)
+		throws PortalException {
+
+		return getService().getOrAddEmptyObjectEntry(
+			externalReferenceCode, groupId, userId, objectDefinitionId);
 	}
 
 	/**
@@ -210,6 +215,15 @@ public class ObjectEntryServiceUtil {
 			groupId, objectDefinitionId, actionId);
 	}
 
+	public static ObjectEntry moveObjectEntryToTrash(
+			long userId, ObjectEntry objectEntry,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().moveObjectEntryToTrash(
+			userId, objectEntry, serviceContext);
+	}
+
 	public static ObjectEntry partialUpdateObjectEntry(
 			long objectEntryId, Map<String, Serializable> values,
 			com.liferay.portal.kernel.service.ServiceContext serviceContext)
@@ -217,6 +231,15 @@ public class ObjectEntryServiceUtil {
 
 		return getService().partialUpdateObjectEntry(
 			objectEntryId, values, serviceContext);
+	}
+
+	public static ObjectEntry restoreObjectEntryFromTrash(
+			long userId, ObjectEntry objectEntry,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().restoreObjectEntryFromTrash(
+			userId, objectEntry, serviceContext);
 	}
 
 	public static void subscribeObjectEntry(

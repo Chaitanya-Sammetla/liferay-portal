@@ -6,7 +6,10 @@
 package com.liferay.portal.kernel.upgrade.data.cleanup.util;
 
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
+import com.liferay.portal.kernel.dao.db.DBManagerUtil;
+import com.liferay.portal.kernel.dao.db.DBType;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
 import com.liferay.portal.kernel.util.StringBundler;
@@ -30,16 +33,10 @@ public class OrphanReferencesDataCleanupUtil {
 			String targetColumnName, String targetTableName)
 		throws Exception {
 
-		if (_normalizedExcludedTableNames.isEmpty()) {
-			DBInspector dbInspector = new DBInspector(connection);
+		List<String> excludedTableNames = getNormalizedExcludedTableNames(
+			connection);
 
-			for (String excludedTableName : _excludedTableNames) {
-				_normalizedExcludedTableNames.add(
-					dbInspector.normalizeName(excludedTableName));
-			}
-		}
-
-		if (_normalizedExcludedTableNames.contains(sourceTableName)) {
+		if (excludedTableNames.contains(sourceTableName)) {
 			return;
 		}
 
@@ -47,7 +44,7 @@ public class OrphanReferencesDataCleanupUtil {
 				StringBundler.concat(
 					"select ", sourceColumnName, ", count(1) from ",
 					sourceTableName,
-					_getWhereClause(
+					getWhereClause(
 						connection, sourceAdditionalWhereClause,
 						sourceColumnName, sourceTableName, targetColumnName,
 						targetTableName),
@@ -55,7 +52,7 @@ public class OrphanReferencesDataCleanupUtil {
 			PreparedStatement preparedStatement2 = connection.prepareStatement(
 				StringBundler.concat(
 					"delete from ", sourceTableName,
-					_getWhereClause(
+					getWhereClause(
 						connection, sourceAdditionalWhereClause,
 						sourceColumnName, sourceTableName, targetColumnName,
 						targetTableName)));
@@ -68,33 +65,59 @@ public class OrphanReferencesDataCleanupUtil {
 			}
 
 			while (resultSet.next()) {
+				long count = resultSet.getLong(2);
+
 				_log.info(
 					StringBundler.concat(
-						String.valueOf(resultSet.getLong(2)),
-						" orphan entries from table ", sourceTableName,
-						" have been deleted because value ",
+						"Table ", sourceTableName, ", ", String.valueOf(count),
+						" row", (count > 1) ? "s " : " ", "deleted because ",
+						sourceColumnName, StringPool.SPACE,
 						String.valueOf(resultSet.getObject(1)),
-						" was not found in the origin table ", targetTableName,
-						" and column ", targetColumnName));
+						" was not found in ", targetTableName,
+						StringPool.PERIOD, targetColumnName));
 			}
 		}
 	}
 
-	private static String _getWhereClause(
+	public static List<String> getNormalizedExcludedTableNames(
+			Connection connection)
+		throws Exception {
+
+		if (_normalizedExcludedTableNames.isEmpty()) {
+			DBInspector dbInspector = new DBInspector(connection);
+
+			for (String excludedTableName : _excludedTableNames) {
+				_normalizedExcludedTableNames.add(
+					dbInspector.normalizeName(excludedTableName));
+			}
+		}
+
+		return _normalizedExcludedTableNames;
+	}
+
+	public static String getWhereClause(
 			Connection connection, String sourceAdditionalWhereClause,
 			String sourceColumnName, String sourceTableName,
 			String targetColumnName, String targetTableName)
 		throws Exception {
 
+		String additionalNullCheck = "";
+
+		DB db = DBManagerUtil.getDB();
 		DBInspector dbInspector = new DBInspector(connection);
+
+		if (dbInspector.isNumeric(sourceTableName, sourceColumnName)) {
+			additionalNullCheck = " and " + sourceColumnName + " != 0";
+		}
+		else if (db.getDBType() != DBType.ORACLE) {
+			additionalNullCheck = " and " + sourceColumnName + " != ''";
+		}
 
 		return StringBundler.concat(
 			" where not exists (select 1 from ", targetTableName, " where ",
 			targetTableName, StringPool.PERIOD, targetColumnName, " = ",
 			sourceTableName, StringPool.PERIOD, sourceColumnName, ") and ",
-			sourceColumnName, " is not null and ", sourceColumnName, " != ",
-			dbInspector.isNumeric(sourceTableName, sourceColumnName) ? "0" :
-				"''",
+			sourceColumnName, " is not null", additionalNullCheck,
 			(sourceAdditionalWhereClause != null) ?
 				" and " + sourceAdditionalWhereClause : "");
 	}
@@ -103,7 +126,7 @@ public class OrphanReferencesDataCleanupUtil {
 		OrphanReferencesDataCleanupUtil.class);
 
 	private static final List<String> _excludedTableNames = new ArrayList<>(
-		Arrays.asList("Audit_AuditEvent"));
+		Arrays.asList("Audit_AuditEvent", "CyrusUser", "CyrusVirtual"));
 	private static final List<String> _normalizedExcludedTableNames =
 		new ArrayList<>();
 

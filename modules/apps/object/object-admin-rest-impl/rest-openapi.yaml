@@ -177,6 +177,10 @@ components:
                     type: boolean
                 titleObjectFieldName:
                     type: string
+                workflowDefinitionLinks:
+                    items:
+                        $ref: "#/components/schemas/WorkflowDefinitionLink"
+                    type: array
             type: object
         ObjectDefinitionSetting:
             properties:
@@ -693,10 +697,17 @@ components:
                 label_i18n:
                     type: string
             type: object
+        WorkflowDefinitionLink:
+            properties:
+                groupExternalReferenceCode:
+                    type: string
+                workflowDefinitionName:
+                    type: string
+            type: object
 info:
     description:
         "A Java client JAR is available for use with the group ID 'com.liferay', artifact ID
-        'com.liferay.object.admin.rest.client', and version '1.0.80'."
+        'com.liferay.object.admin.rest.client', and version '1.0.81'."
     license:
         name: Apache 2.0
         url: http://www.apache.org/licenses/LICENSE-2.0.html

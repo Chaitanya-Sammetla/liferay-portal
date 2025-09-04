@@ -47,7 +47,7 @@ public class PlaywrightBatchBuildTestrayCaseResult
 
 	@Override
 	public BuildReport getBuildReport() {
-		if (JenkinsResultsParserUtil.isBuildCachingEnabled()) {
+		if (_playwrightTestClassMethod.isBuildCachingEnabled()) {
 			DownstreamBuildReport cachedDownstreamBuildReport =
 				_playwrightTestClassMethod.getCachedDownstreamBuildReport();
 
@@ -177,14 +177,10 @@ public class PlaywrightBatchBuildTestrayCaseResult
 		List<TestrayAttachment> testrayAttachments =
 			super.getTestrayAttachments();
 
+		testrayAttachments.addAll(getLiferayLogTestrayAttachments());
+
 		testrayAttachments.add(getPlaywrightReportTestrayAttachment());
-
-		TestrayAttachment playwrightTraceViewerTestrayAttachment =
-			getPlaywrightTraceViewerTestrayAttachment();
-
-		if (playwrightTraceViewerTestrayAttachment != null) {
-			testrayAttachments.add(playwrightTraceViewerTestrayAttachment);
-		}
+		testrayAttachments.add(getPlaywrightTraceViewerTestrayAttachment());
 
 		testrayAttachments.removeAll(Collections.singleton(null));
 
@@ -193,7 +189,7 @@ public class PlaywrightBatchBuildTestrayCaseResult
 
 	@Override
 	public TestReport getTestReport() {
-		if (JenkinsResultsParserUtil.isBuildCachingEnabled()) {
+		if (_playwrightTestClassMethod.isBuildCachingEnabled()) {
 			TestReport cachedTestReport =
 				_playwrightTestClassMethod.getCachedTestReport();
 

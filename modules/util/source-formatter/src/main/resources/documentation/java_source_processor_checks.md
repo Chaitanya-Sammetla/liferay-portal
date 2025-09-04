@@ -82,7 +82,7 @@ JavaCompanyScopedIdsCheck | [Bug Prevention](bug_prevention_checks.md#bug-preven
 [JavaComponentActivateCheck](check/java_component_activate_check.md#javacomponentactivatecheck) | [Naming Conventions](naming_conventions_checks.md#naming-conventions-checks) | Checks if methods with annotation `@Activate` or `@Deactivate` follow naming conventions. |
 JavaComponentAnnotationsCheck | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Performs several checks on classes with `@Component` annotation. |
 [JavaConfigurationAdminCheck](check/java_configuration_admin_check.md#javaconfigurationadmincheck) | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Checks for correct use of `location == ?` when calling `org.osgi.service.cm.ConfigurationAdmin#createFactoryConfiguration`. |
-[JavaConfigurationCategoryCheck](check/java_configuration_category_check.md#javaconfigurationcategorycheck) | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Checks that the value of `category` in `@ExtendedObjectClassDefinition` matches the `categoryKey` of the corresponding class in `configuration-admin-web`. |
+[JavaConfigurationCategoryCheck](check/java_configuration_category_check.md#javaconfigurationcategorycheck) | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Checks that the value of `category` in `@ExtendedObjectClassDefinition` matches the `categoryKey` of the corresponding class that implements `ConfigurationCategory`. |
 JavaConstantsFileCheck | [Naming Conventions](naming_conventions_checks.md#naming-conventions-checks) | Checks if constants names follow naming conventions. |
 [JavaConstructorParametersCheck](check/java_constructor_parameters_check.md#javaconstructorparameterscheck) | [Styling](styling_checks.md#styling-checks) | Checks that the order of variable assignments matches the order of the parameters in the constructor signature. |
 JavaConstructorSuperCallCheck | [Styling](styling_checks.md#styling-checks) | Finds unnecessary call to no-argument constructor of the superclass. |
@@ -115,7 +115,6 @@ JavaInterfaceCheck | [Bug Prevention](bug_prevention_checks.md#bug-prevention-ch
 JavaInternalPackageCheck | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Performs several checks on class in `internal` package. |
 JavaJSImportMapsContributorCheck | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Performs several checks on `*JSImportMapsContributor` class. |
 JavaJSPDynamicIncludeCheck | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Performs several checks on `*JSPDynamicInclude` class. |
-JavaJakartaTransformCheck | [JakartaTransform](jakarta_transform_checks.md#jakartatransform-checks) | Performs replacements for use of Jakarta. |
 [JavaLocalSensitiveComparisonCheck](check/java_local_sensitive_comparison_check.md#javalocalsensitivecomparisoncheck) | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Checks that `java.text.Collator` is used when comparing localized values. |
 JavaLocalServiceImplErcUsageCheck | [Productivity](productivity_checks.md#productivity-checks) | Automatically generates and ensures that `externalReferenceCode` is properly used in local `*ServiceImpl` add method. |
 JavaLogClassNameCheck | [Bug Prevention](bug_prevention_checks.md#bug-prevention-checks) | Checks the name of the class that is passed in `LogFactoryUtil.getLog`. |
@@ -278,6 +277,7 @@ SizeIsZeroCheck | [Styling](styling_checks.md#styling-checks) | Finds cases of c
 [StaticVariableNameCheck](https://checkstyle.sourceforge.io/checks/naming/staticvariablename.html) | [Naming Conventions](naming_conventions_checks.md#naming-conventions-checks) | Checks that static, non-final variable names conform to a specified pattern. |
 StringBundlerNamingCheck | [Naming Conventions](naming_conventions_checks.md#naming-conventions-checks) | Checks for consistent naming on variables of type 'StringBundler'. |
 StringCastCheck | [Performance](performance_checks.md#performance-checks) | Finds cases where a redundant `toString()` is called on variable type `String`. |
+StringIndexOfCallCheck | [Styling](styling_checks.md#styling-checks) | Finds calls to `indexOf` (use `contains` instead). |
 [StringLiteralEqualityCheck](https://checkstyle.sourceforge.io/checks/coding/stringliteralequality.html) | [Styling](styling_checks.md#styling-checks) | Checks that string literals are not used with == or !=. |
 [StringMethodsCheck](check/string_methods_check.md#stringmethodscheck) | [Performance](performance_checks.md#performance-checks) | Checks if performance can be improved by using different String operation methods. |
 SubstringCheck | [Performance](performance_checks.md#performance-checks) | Finds cases like `s.substring(1, s.length())` (use `s.substring(1)` instead). |

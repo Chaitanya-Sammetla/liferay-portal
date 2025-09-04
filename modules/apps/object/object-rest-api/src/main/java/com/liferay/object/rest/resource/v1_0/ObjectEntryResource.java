@@ -187,6 +187,10 @@ public interface ObjectEntryResource {
 			String scopeKey, String externalReferenceCode, Integer version)
 		throws Exception;
 
+	public ObjectEntry postScopeScopeKeyByExternalReferenceCodeExpire(
+			String scopeKey, String externalReferenceCode)
+		throws Exception;
+
 	public void postScopeScopeKeyByExternalReferenceCodeSubscribe(
 			String scopeKey, String externalReferenceCode)
 		throws Exception;
@@ -212,6 +216,10 @@ public interface ObjectEntryResource {
 
 	public void putByExternalReferenceCodeObjectActionObjectActionName(
 			String externalReferenceCode, String objectActionName)
+		throws Exception;
+
+	public ObjectEntry putByExternalReferenceCodeRestore(
+			String externalReferenceCode)
 		throws Exception;
 
 	public ObjectEntry putObjectEntry(
@@ -248,6 +256,10 @@ public interface ObjectEntryResource {
 			putScopeScopeKeyByExternalReferenceCodeObjectActionObjectActionName(
 				String scopeKey, String externalReferenceCode,
 				String objectActionName)
+		throws Exception;
+
+	public ObjectEntry putScopeScopeKeyByExternalReferenceCodeRestore(
+			String scopeKey, String externalReferenceCode)
 		throws Exception;
 
 	public default void setContextAcceptLanguage(

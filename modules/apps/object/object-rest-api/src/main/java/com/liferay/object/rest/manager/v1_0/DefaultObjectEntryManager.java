@@ -33,10 +33,14 @@ public interface DefaultObjectEntryManager extends ObjectEntryManager {
 		throws Exception;
 
 	public ObjectEntry addRelatedObjectEntry(
+			DTOConverterContext dtoConverterContext, ObjectEntry objectEntry,
+			long objectEntryId, ObjectRelationship objectRelationship)
+		throws Exception;
+
+	public ObjectEntry addRelatedObjectEntry(
 			DTOConverterContext dtoConverterContext,
-			ObjectDefinition objectDefinition, ObjectEntry objectEntry,
-			ObjectRelationship objectRelationship, long parentObjectEntryId,
-			String scopeKey)
+			String externalReferenceCode, ObjectEntry objectEntry,
+			ObjectRelationship objectRelationship, String scopeKey)
 		throws Exception;
 
 	public Object addSystemObjectRelationshipMappingTableValues(
@@ -57,6 +61,7 @@ public interface DefaultObjectEntryManager extends ObjectEntryManager {
 		throws Exception;
 
 	public void deleteObjectEntry(
+			DTOConverterContext dtoConverterContext,
 			ObjectDefinition objectDefinition, long objectEntryId)
 		throws Exception;
 
@@ -67,6 +72,16 @@ public interface DefaultObjectEntryManager extends ObjectEntryManager {
 	public void deleteObjectEntryByVersion(
 			String externalReferenceCode, ObjectDefinition objectDefinition,
 			String scopeKey, int version)
+		throws Exception;
+
+	public void deleteRelatedObjectEntry(
+			long objectEntryId, ObjectRelationship objectRelationship,
+			long parentObjectEntryId)
+		throws Exception;
+
+	public void deleteRelatedObjectEntry(
+			String externalReferenceCode, ObjectRelationship objectRelationship,
+			String parentExternalReferenceCode, String scopeKey)
 		throws Exception;
 
 	public void disassociateRelatedModels(
@@ -89,6 +104,12 @@ public interface DefaultObjectEntryManager extends ObjectEntryManager {
 
 	public ObjectEntry expireObjectEntry(
 			DTOConverterContext dtoConverterContext, long objectEntryId)
+		throws Exception;
+
+	public ObjectEntry expireObjectEntry(
+			DTOConverterContext dtoConverterContext,
+			String externalReferenceCode, ObjectDefinition objectDefinition,
+			String scopeKey)
 		throws Exception;
 
 	public ObjectEntry expireObjectEntryByVersion(
@@ -142,10 +163,27 @@ public interface DefaultObjectEntryManager extends ObjectEntryManager {
 			String scopeKey, int version)
 		throws Exception;
 
-	public Page<ObjectEntry> getObjectEntryRelatedObjectEntries(
+	public Page<ObjectEntry> getRelatedObjectEntries(
+			Aggregation aggregation, DTOConverterContext dtoConverterContext,
+			String externalReferenceCode, String filterString,
+			ObjectRelationship objectRelationship, Pagination pagination,
+			String scopeKey, String search, Sort[] sorts)
+		throws Exception;
+
+	public Page<ObjectEntry> getRelatedObjectEntries(
+			DTOConverterContext dtoConverterContext, long objectEntryId,
+			ObjectRelationship objectRelationship, Pagination pagination)
+		throws Exception;
+
+	public ObjectEntry getRelatedObjectEntry(
+			DTOConverterContext dtoConverterContext, long objectEntryId,
+			ObjectRelationship objectRelationship, long parentObjectEntryId)
+		throws Exception;
+
+	public ObjectEntry getRelatedObjectEntry(
 			DTOConverterContext dtoConverterContext,
-			ObjectDefinition objectDefinition, Long objectEntryId,
-			String objectRelationshipName, Pagination pagination)
+			String externalReferenceCode, ObjectRelationship objectRelationship,
+			String parentExternalReferenceCode, String scopeKey)
 		throws Exception;
 
 	public Page<Object> getRelatedSystemObjectEntries(
@@ -176,6 +214,25 @@ public interface DefaultObjectEntryManager extends ObjectEntryManager {
 			ObjectEntry objectEntry)
 		throws Exception;
 
+	public ObjectEntry partialUpdateRelatedObjectEntry(
+			DTOConverterContext dtoConverterContext, ObjectEntry objectEntry,
+			long objectEntryId, ObjectRelationship objectRelationship,
+			long parentObjectEntryId)
+		throws Exception;
+
+	public ObjectEntry partialUpdateRelatedObjectEntry(
+			DTOConverterContext dtoConverterContext,
+			String externalReferenceCode, ObjectEntry objectEntry,
+			ObjectRelationship objectRelationship,
+			String parentExternalReferenceCode, String scopeKey)
+		throws Exception;
+
+	public ObjectEntry restoreObjectEntry(
+			DTOConverterContext dtoConverterContext,
+			String externalReferenceCode, ObjectDefinition objectDefinition,
+			String scopeKey)
+		throws Exception;
+
 	public ObjectEntry restoreObjectEntryByVersion(
 			DTOConverterContext dtoConverterContext,
 			ObjectDefinition objectDefinition, long objectEntryId, int version)
@@ -188,21 +245,32 @@ public interface DefaultObjectEntryManager extends ObjectEntryManager {
 		throws Exception;
 
 	public void subscribeObjectEntry(
-			DTOConverterContext dtoConverterContext,
 			String externalReferenceCode, ObjectDefinition objectDefinition,
-			String scopeKey)
+			String scopeKey, long userId)
 		throws Exception;
 
 	public void unsubscribeObjectEntry(
-			DTOConverterContext dtoConverterContext,
 			String externalReferenceCode, ObjectDefinition objectDefinition,
-			String scopeKey)
+			String scopeKey, long userId)
 		throws Exception;
 
 	public ObjectEntry updateObjectEntry(
 			DTOConverterContext dtoConverterContext,
 			ObjectDefinition objectDefinition, long objectEntryId,
 			ObjectEntry objectEntry)
+		throws Exception;
+
+	public ObjectEntry updateRelatedObjectEntry(
+			DTOConverterContext dtoConverterContext, ObjectEntry objectEntry,
+			long objectEntryId, ObjectRelationship objectRelationship,
+			long parentNodeObjectEntryId)
+		throws Exception;
+
+	public ObjectEntry updateRelatedObjectEntry(
+			DTOConverterContext dtoConverterContext,
+			String externalReferenceCode, ObjectEntry objectEntry,
+			ObjectRelationship objectRelationship,
+			String parentExternalReferenceCode, String scopeKey)
 		throws Exception;
 
 	public void validateObjectEntry(

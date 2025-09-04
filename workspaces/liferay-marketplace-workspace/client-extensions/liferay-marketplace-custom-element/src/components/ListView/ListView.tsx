@@ -87,6 +87,8 @@ export type ListViewProps<T extends Record<string, any>> = {
 		displayType: boolean;
 	};
 
+	refreshInterval?: number;
+
 	resource: string;
 
 	tableProps: Omit<
@@ -124,6 +126,7 @@ const ListView = <T extends Record<string, any>>({
 		...managementToolbarProps
 	} = {},
 	paginationOptions = {displayType: true},
+	refreshInterval,
 	resource,
 	tableProps,
 	transformData = (item) => item,
@@ -247,12 +250,15 @@ const ListView = <T extends Record<string, any>>({
 		isValidating,
 		loading,
 		mutate,
-	} = useFetch(resource, {
-		params: getURLSearchParams(),
-	});
+	} = useFetch(
+		resource,
+		{
+			params: getURLSearchParams(),
+		},
+		refreshInterval
+	);
 
 	const {
-		actions = {},
 		items = [],
 		page = 1,
 		pageSize,
@@ -295,17 +301,18 @@ const ListView = <T extends Record<string, any>>({
 			{managementToolbarVisible && (
 				<ManagementToolbar
 					{...managementToolbarProps}
-					actions={actions}
 					totalItems={totalCount}
 				/>
 			)}
 
 			{!items.length && (
-				<EmptyState
-					description={error?.message}
-					type={error ? 'EMPTY_SEARCH' : 'EMPTY_STATE'}
-					{...emptyStateProps}
-				/>
+				<>
+					<EmptyState
+						description={error?.message}
+						type={error ? 'EMPTY_SEARCH' : 'EMPTY_STATE'}
+						{...emptyStateProps}
+					/>
+				</>
 			)}
 			{!!items.length && (
 				<>
@@ -318,15 +325,14 @@ const ListView = <T extends Record<string, any>>({
 					/>
 
 					{paginationOptions.displayType && Pagination}
-
-					{children &&
-						children(response!, {
-							dispatch,
-							listViewContext,
-							mutate,
-						})}
 				</>
 			)}
+			{children &&
+				children(response!, {
+					dispatch,
+					listViewContext,
+					mutate,
+				})}
 		</>
 	);
 };

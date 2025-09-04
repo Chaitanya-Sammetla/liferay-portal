@@ -17,6 +17,8 @@ import com.liferay.document.library.configuration.DLSizeLimitConfigurationProvid
 import com.liferay.headless.asset.library.dto.v1_0.AssetLibrary;
 import com.liferay.headless.asset.library.dto.v1_0.MimeTypeLimit;
 import com.liferay.headless.asset.library.dto.v1_0.Settings;
+import com.liferay.headless.asset.library.internal.odata.entity.v1_0.AssetLibraryEntityModel;
+import com.liferay.headless.asset.library.internal.util.AssetLibraryUtil;
 import com.liferay.headless.asset.library.resource.v1_0.AssetLibraryResource;
 import com.liferay.petra.function.UnsafeSupplier;
 import com.liferay.petra.string.StringPool;
@@ -26,6 +28,8 @@ import com.liferay.portal.kernel.search.Field;
 import com.liferay.portal.kernel.search.Sort;
 import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
+import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
+import com.liferay.portal.kernel.security.permission.resource.ModelResourcePermission;
 import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
@@ -35,6 +39,7 @@ import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
 import com.liferay.portal.kernel.util.Validator;
+import com.liferay.portal.odata.entity.EntityModel;
 import com.liferay.portal.vulcan.dto.converter.DTOConverter;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 import com.liferay.portal.vulcan.dto.converter.DefaultDTOConverterContext;
@@ -42,6 +47,9 @@ import com.liferay.portal.vulcan.pagination.Page;
 import com.liferay.portal.vulcan.pagination.Pagination;
 import com.liferay.portal.vulcan.util.LocalizedMapUtil;
 import com.liferay.portal.vulcan.util.SearchUtil;
+import com.liferay.sharing.constants.SharingConfigurationConstants;
+
+import jakarta.ws.rs.core.MultivaluedMap;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -71,8 +79,7 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 			throw new UnsupportedOperationException();
 		}
 
-		DepotEntry depotEntry = _depotEntryService.getGroupDepotEntry(
-			assetLibraryId);
+		DepotEntry depotEntry = _getGroupDepotEntry(assetLibraryId);
 
 		_depotEntryService.deleteDepotEntry(depotEntry.getDepotEntryId());
 	}
@@ -109,8 +116,7 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 			throw new UnsupportedOperationException();
 		}
 
-		DepotEntry depotEntry = _depotEntryService.getGroupDepotEntry(
-			assetLibraryId);
+		DepotEntry depotEntry = _getGroupDepotEntry(assetLibraryId);
 
 		_depotEntryPinService.deleteDepotEntryPin(
 			contextUser.getUserId(), depotEntry.getDepotEntryId());
@@ -182,8 +188,7 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 			throw new UnsupportedOperationException();
 		}
 
-		return _toAssetLibrary(
-			_depotEntryService.getGroupDepotEntry(assetLibraryId));
+		return _toAssetLibrary(_getGroupDepotEntry(assetLibraryId));
 	}
 
 	@Override
@@ -201,6 +206,11 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 	}
 
 	@Override
+	public EntityModel getEntityModel(MultivaluedMap multivaluedMap) {
+		return _assetLibraryEntityModel;
+	}
+
+	@Override
 	public AssetLibrary patchAssetLibrary(
 			Long assetLibraryId, AssetLibrary assetLibrary)
 		throws Exception {
@@ -209,8 +219,7 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 			throw new UnsupportedOperationException();
 		}
 
-		DepotEntry depotEntry = _depotEntryService.getGroupDepotEntry(
-			assetLibraryId);
+		DepotEntry depotEntry = _getGroupDepotEntry(assetLibraryId);
 
 		Group group = depotEntry.getGroup();
 
@@ -331,8 +340,7 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 			throw new UnsupportedOperationException();
 		}
 
-		DepotEntry depotEntry = _depotEntryService.getGroupDepotEntry(
-			assetLibraryId);
+		DepotEntry depotEntry = _getGroupDepotEntry(assetLibraryId);
 
 		_depotEntryPinService.addDepotEntryPin(
 			contextUser.getUserId(), depotEntry.getDepotEntryId());
@@ -380,7 +388,12 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 		}
 
 		DepotEntry depotEntry = _depotEntryService.addDepotEntry(
-			nameMap, descriptionMap, serviceContext);
+			nameMap, descriptionMap,
+			AssetLibraryUtil.getDepotEntryType(
+				GetterUtil.getObject(
+					assetLibrary.getType(),
+					() -> AssetLibrary.Type.ASSET_LIBRARY)),
+			serviceContext);
 
 		group = depotEntry.getGroup();
 
@@ -438,6 +451,19 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 		}
 
 		return depotAppCustomizationMap;
+	}
+
+	private DepotEntry _getGroupDepotEntry(Long assetLibraryId)
+		throws Exception {
+
+		DepotEntry depotEntry = _depotEntryService.fetchGroupDepotEntry(
+			assetLibraryId);
+
+		if (depotEntry != null) {
+			return depotEntry;
+		}
+
+		return _depotEntryService.getDepotEntry(assetLibraryId);
 	}
 
 	private long _getGroupIdByExternalReferenceCode(
@@ -554,7 +580,9 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 			GetterUtil.getString(settings.getLogoColor(), "outline-0")
 		).put(
 			"sharingEnabled",
-			GetterUtil.getBoolean(settings.getSharingEnabled())
+			GetterUtil.getBoolean(
+				settings.getSharingEnabled(),
+				SharingConfigurationConstants.SHARING_ENABLED_DEFAULT)
 		).build();
 	}
 
@@ -565,6 +593,34 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 			new DefaultDTOConverterContext(
 				contextAcceptLanguage.isAcceptAllLanguages(),
 				HashMapBuilder.put(
+					"assign-members",
+					() -> {
+						if (!_groupModelResourcePermission.contains(
+								PermissionThreadLocal.getPermissionChecker(),
+								depotEntry.getGroupId(),
+								ActionKeys.ASSIGN_MEMBERS)) {
+
+							return null;
+						}
+
+						return addAction(
+							ActionKeys.VIEW, depotEntry, "getAssetLibrary");
+					}
+				).put(
+					"connect-sites",
+					() -> {
+						if (!_depotEntryModelResourcePermission.contains(
+								PermissionThreadLocal.getPermissionChecker(),
+								depotEntry.getDepotEntryId(),
+								ActionKeys.UPDATE)) {
+
+							return null;
+						}
+
+						return addAction(
+							ActionKeys.VIEW, depotEntry, "getAssetLibrary");
+					}
+				).put(
 					"create",
 					addAction(
 						DepotActionKeys.ADD_DEPOT_ENTRY, depotEntry,
@@ -592,6 +648,34 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 					"update",
 					addAction(
 						ActionKeys.UPDATE, depotEntry, "patchAssetLibrary")
+				).put(
+					"view-members",
+					() -> {
+						if (_groupModelResourcePermission.contains(
+								PermissionThreadLocal.getPermissionChecker(),
+								depotEntry.getGroupId(),
+								ActionKeys.ASSIGN_MEMBERS)) {
+
+							return null;
+						}
+
+						return addAction(
+							ActionKeys.VIEW, depotEntry, "getAssetLibrary");
+					}
+				).put(
+					"view-sites",
+					() -> {
+						if (_depotEntryModelResourcePermission.contains(
+								PermissionThreadLocal.getPermissionChecker(),
+								depotEntry.getDepotEntryId(),
+								ActionKeys.UPDATE)) {
+
+							return null;
+						}
+
+						return addAction(
+							ActionKeys.VIEW, depotEntry, "getAssetLibrary");
+					}
 				).build(),
 				_dtoConverterRegistry, depotEntry.getDepotEntryId(),
 				contextAcceptLanguage.getPreferredLocale(), contextUriInfo,
@@ -607,21 +691,31 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 
 		MimeTypeLimit[] mimeTypeLimits = settings.getMimeTypeLimits();
 
-		if (mimeTypeLimits != null) {
-			for (MimeTypeLimit mimeTypeLimit : settings.getMimeTypeLimits()) {
-				String mimeType = mimeTypeLimit.getMimeType();
+		if (mimeTypeLimits == null) {
+			_dlSizeLimitConfigurationProvider.updateGroupSizeLimit(
+				groupId, 0L, 0L, mimeTypeSizeLimits);
 
-				if (Validator.isNotNull(mimeType)) {
-					mimeTypeSizeLimits.put(
-						mimeType,
-						GetterUtil.getLong(mimeTypeLimit.getMaximumSize()));
-				}
+			return;
+		}
+
+		mimeTypeSizeLimits = new LinkedHashMap<>();
+
+		for (MimeTypeLimit mimeTypeLimit : mimeTypeLimits) {
+			String mimeType = mimeTypeLimit.getMimeType();
+
+			if (Validator.isNotNull(mimeType)) {
+				mimeTypeSizeLimits.put(
+					mimeType,
+					GetterUtil.getLong(mimeTypeLimit.getMaximumSize()));
 			}
 		}
 
 		_dlSizeLimitConfigurationProvider.updateGroupSizeLimit(
 			groupId, 0L, 0L, mimeTypeSizeLimits);
 	}
+
+	private static final AssetLibraryEntityModel _assetLibraryEntityModel =
+		new AssetLibraryEntityModel();
 
 	@Reference(
 		target = "(component.name=com.liferay.headless.asset.library.internal.dto.v1_0.converter.AssetLibraryDTOConverter)"
@@ -631,6 +725,10 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 	@Reference
 	private DepotAppCustomizationLocalService
 		_depotAppCustomizationLocalService;
+
+	@Reference(target = "(model.class.name=com.liferay.depot.model.DepotEntry)")
+	private ModelResourcePermission<DepotEntry>
+		_depotEntryModelResourcePermission;
 
 	@Reference
 	private DepotEntryPinLocalService _depotEntryPinLocalService;
@@ -649,5 +747,10 @@ public class AssetLibraryResourceImpl extends BaseAssetLibraryResourceImpl {
 
 	@Reference
 	private GroupLocalService _groupLocalService;
+
+	@Reference(
+		target = "(model.class.name=com.liferay.portal.kernel.model.Group)"
+	)
+	private ModelResourcePermission<Group> _groupModelResourcePermission;
 
 }

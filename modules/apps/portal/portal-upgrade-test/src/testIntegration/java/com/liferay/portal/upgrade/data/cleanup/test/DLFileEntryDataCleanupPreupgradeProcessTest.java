@@ -7,20 +7,24 @@ package com.liferay.portal.upgrade.data.cleanup.test;
 
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
 import com.liferay.portal.kernel.dao.db.DBType;
+import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.test.log.LogCapture;
-import com.liferay.portal.test.log.LogEntry;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.upgrade.data.cleanup.DLFileEntryDataCleanupPreupgradeProcess;
 
-import java.util.ArrayList;
+import java.sql.Connection;
+
 import java.util.List;
 
+import org.junit.AfterClass;
 import org.junit.Assert;
+import org.junit.BeforeClass;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -37,6 +41,18 @@ public class DLFileEntryDataCleanupPreupgradeProcessTest
 	@Rule
 	public static final AggregateTestRule aggregateTestRule =
 		new LiferayIntegrationTestRule();
+
+	@BeforeClass
+	public static void setUpClass() throws Exception {
+		_connection = DataAccess.getConnection();
+
+		_dbInspector = new DBInspector(_connection);
+	}
+
+	@AfterClass
+	public static void tearDownClass() throws Exception {
+		DataAccess.cleanUp(_connection);
+	}
 
 	@Test
 	public void testUpgrade() throws Exception {
@@ -62,23 +78,20 @@ public class DLFileEntryDataCleanupPreupgradeProcessTest
 
 			upgrade();
 
-			List<LogEntry> logEntries = logCapture.getLogEntries();
-
-			List<String> logMessages = new ArrayList<>();
-
-			for (LogEntry logEntry : logEntries) {
-				logMessages.add(logEntry.getMessage());
-			}
+			List<String> messages = logCapture.getMessages();
 
 			Assert.assertTrue(
-				logMessages.contains(
-					"Deleted document library file entry " + fileEntryId1 +
-						" because its name was null"));
-			Assert.assertTrue(
-				logMessages.contains(
+				messages.contains(
 					StringBundler.concat(
-						"Deleted document library file entry ", fileEntryId2,
-						" because its name was ",
+						"Table ", _dbInspector.normalizeName("DLFileEntry"),
+						", row with fileEntryId ", fileEntryId1,
+						" deleted because its name was null")));
+			Assert.assertTrue(
+				messages.contains(
+					StringBundler.concat(
+						"Table ", _dbInspector.normalizeName("DLFileEntry"),
+						", row with fileEntryId ", fileEntryId2,
+						" deleted because its name was ",
 						(DBManagerUtil.getDBType() == DBType.ORACLE) ? "null" :
 							"empty")));
 		}
@@ -89,5 +102,8 @@ public class DLFileEntryDataCleanupPreupgradeProcessTest
 				"delete from DLFileEntry where fileEntryId = " + fileEntryId2);
 		}
 	}
+
+	private static Connection _connection;
+	private static DBInspector _dbInspector;
 
 }

@@ -625,7 +625,7 @@ public class JenkinsResultsParserUtil {
 
 		processBuilder.directory(baseDir.getAbsoluteFile());
 
-		Process process = new BufferedProcess(2000000, processBuilder.start());
+		Process process = new BufferedProcess(processBuilder.start());
 
 		Thread currentThread = Thread.currentThread();
 		long duration = 0;
@@ -1457,17 +1457,13 @@ public class JenkinsResultsParserUtil {
 
 			for (String url : _buildPropertiesURLs) {
 				if (url.startsWith("file://")) {
-					properties.putAll(
-						getProperties(new File(url.replace("file://", ""))));
+					properties.putAll(new EnvironmentBuildProperties(url));
 
 					continue;
 				}
 
-				properties.load(
-					new StringReader(
-						toString(
-							getLocalURL(url), false, 3, null, null, 30,
-							_MILLIS_TIMEOUT_DEFAULT, null, true)));
+				properties.putAll(
+					new EnvironmentBuildProperties(getLocalURL(url)));
 			}
 
 			if (!properties.containsKey("user.home")) {
@@ -1972,11 +1968,21 @@ public class JenkinsResultsParserUtil {
 
 			if (!isNullOrEmpty(output)) {
 				for (String line : output.split("\n")) {
-					return new File(baseDir, line);
+					if (isNullOrEmpty(line)) {
+						continue;
+					}
+
+					File file = new File(baseDir, line);
+
+					if (!file.exists()) {
+						continue;
+					}
+
+					return file;
 				}
 			}
 		}
-		catch (IOException | TimeoutException exception) {
+		catch (Exception exception) {
 			System.out.println(exception.getMessage());
 		}
 
@@ -1995,7 +2001,10 @@ public class JenkinsResultsParserUtil {
 
 						String filePathString = filePath.toString();
 
-						if (filePathString.contains(pathSnippet)) {
+						if (filePathString.contains(pathSnippet) ||
+							filePathString.contains(
+								pathSnippet.replaceAll("\\.", "/"))) {
+
 							matchingFiles.add(filePath.toFile());
 						}
 
@@ -3728,27 +3737,6 @@ public class JenkinsResultsParserUtil {
 			throw new RuntimeException(
 				"Unable to invoke jenkins job", exception);
 		}
-	}
-
-	public static boolean isBuildCachingEnabled() {
-		String buildCachingEnabled = System.getenv("BUILD_CACHING_ENABLED");
-
-		if (Objects.equals(buildCachingEnabled, "true")) {
-			return true;
-		}
-
-		try {
-			buildCachingEnabled = getBuildProperty("build.caching.enabled");
-
-			if (Objects.equals(buildCachingEnabled, "true")) {
-				return true;
-			}
-		}
-		catch (IOException ioException) {
-			return false;
-		}
-
-		return false;
 	}
 
 	public static boolean isCINode() {
@@ -5525,6 +5513,12 @@ public class JenkinsResultsParserUtil {
 			httpAuthorization);
 	}
 
+	public static PathMatcher toPathMatcher(String prefix, String glob) {
+		FileSystem fileSystem = FileSystems.getDefault();
+
+		return fileSystem.getPathMatcher(combine("glob:", prefix, glob));
+	}
+
 	public static List<PathMatcher> toPathMatchers(
 		String prefix, List<String> globs) {
 
@@ -6807,7 +6801,11 @@ public class JenkinsResultsParserUtil {
 			Properties temporaryProperties = new Properties();
 
 			try {
-				temporaryProperties.load(new FileInputStream(propertiesFile));
+				String urlString = EnvironmentBuildProperties.toURLString(
+					propertiesFile);
+
+				temporaryProperties.putAll(
+					new EnvironmentBuildProperties(urlString));
 			}
 			catch (IOException ioException) {
 				throw new RuntimeException(

@@ -18,6 +18,7 @@ import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.kernel.service.AssetVocabularyLocalService;
 import com.liferay.batch.engine.unit.BatchEngineUnitProcessor;
 import com.liferay.batch.engine.unit.BatchEngineUnitReader;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalService;
 import com.liferay.document.library.kernel.model.DLFileEntry;
@@ -67,7 +68,7 @@ import org.osgi.framework.FrameworkUtil;
 	featureFlags = {
 		@FeatureFlag(value = "LPD-31149"), @FeatureFlag(value = "LPD-34594"),
 		@FeatureFlag(value = "LPS-179669"), @FeatureFlag(value = "LPD-17564"),
-		@FeatureFlag(value = "LPD-21926"), @FeatureFlag(value = "LPD-11232")
+		@FeatureFlag(value = "LPD-21926"), @FeatureFlag(value = "LPS-179669")
 	}
 )
 @RunWith(Arquillian.class)
@@ -87,14 +88,16 @@ public class OverviewResourceTest extends BaseOverviewResourceTestCase {
 					bundle.getSymbolicName(),
 					"com.liferay.site.initializer.cms")) {
 
-				_setUpProcessedFile(bundle, "01.object.folder");
-				_setUpProcessedFile(bundle, "02.object.definition");
+				_deleteFile(bundle, "01.object.folder");
+				_deleteFile(bundle, "02.object.definition");
 
 				CompletableFuture<Void> completableFuture =
 					_batchEngineUnitProcessor.processBatchEngineUnits(
 						_batchEngineUnitReader.getBatchEngineUnits(bundle));
 
 				completableFuture.join();
+
+				break;
 			}
 		}
 
@@ -108,7 +111,7 @@ public class OverviewResourceTest extends BaseOverviewResourceTestCase {
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()
 			).build(),
-			_serviceContext);
+			DepotConstants.TYPE_ASSET_LIBRARY, _serviceContext);
 	}
 
 	@Override
@@ -233,7 +236,7 @@ public class OverviewResourceTest extends BaseOverviewResourceTestCase {
 			overviewResource.getFileOverview(null, null, null, 7, null));
 	}
 
-	private void _setUpProcessedFile(Bundle bundle, String fileName) {
+	private void _deleteFile(Bundle bundle, String fileName) {
 		File file = bundle.getDataFile(
 			".com.liferay.headless.builder.internal.batch." + fileName +
 				".batch.engine.data.json.0.processed");

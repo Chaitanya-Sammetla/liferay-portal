@@ -11,6 +11,8 @@ import com.liferay.account.model.AccountRole;
 import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountRoleLocalService;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
+import com.liferay.exportimport.test.rule.LazyReferencing;
+import com.liferay.exportimport.test.rule.LazyReferencingTestRule;
 import com.liferay.headless.admin.user.client.dto.v1_0.Role;
 import com.liferay.headless.admin.user.client.pagination.Page;
 import com.liferay.headless.admin.user.client.pagination.Pagination;
@@ -72,6 +74,11 @@ import org.junit.runner.RunWith;
 @DataGuard(scope = DataGuard.Scope.METHOD)
 @RunWith(Arquillian.class)
 public class RoleResourceTest extends BaseRoleResourceTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LazyReferencingTestRule lazyReferencingTestRule =
+		LazyReferencingTestRule.INSTANCE;
 
 	@ClassRule
 	@Rule
@@ -259,6 +266,7 @@ public class RoleResourceTest extends BaseRoleResourceTestCase {
 	}
 
 	@FeatureFlag("LPD-47858")
+	@LazyReferencing
 	@Override
 	@Test
 	public void testPostRole() throws Exception {
@@ -725,7 +733,18 @@ public class RoleResourceTest extends BaseRoleResourceTestCase {
 
 		long totalCount = page.getTotalCount();
 
+		// Sleep for 1 second to ensure that role 1 and existing roles are
+		// created 1 second apart
+
+		Thread.sleep(1000);
+
 		Role role1 = _addRole(false, randomRole());
+
+		// Sleep for 1 second to ensure that role 1 and role 2 are created 1
+		// second apart
+
+		Thread.sleep(1000);
+
 		Role role2 = _addRole(false, randomRole());
 
 		DateFormat dateFormat = DateFormatFactoryUtil.getSimpleDateFormat(
@@ -744,6 +763,11 @@ public class RoleResourceTest extends BaseRoleResourceTestCase {
 			Pagination.of(1, 2));
 
 		Assert.assertEquals(2, page.getTotalCount());
+
+		// Sleep for 1 second to ensure that role 1 and role 2 are modified 1
+		// second apart
+
+		Thread.sleep(1000);
 
 		role1.setDescription(
 			StringUtil.toLowerCase(RandomTestUtil.randomString()));

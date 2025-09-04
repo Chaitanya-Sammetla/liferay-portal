@@ -212,21 +212,10 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		List<DownstreamBuildReport> cachedDownstreamBuildReports =
 			new ArrayList<>();
 
-		if (!JenkinsResultsParserUtil.isBuildCachingEnabled() ||
+		if (!isBuildCachingEnabled() ||
 			!JenkinsResultsParserUtil.isCloudCINode()) {
 
 			return cachedDownstreamBuildReports;
-		}
-
-		StringBuilder sb = new StringBuilder();
-
-		try {
-			sb.append(
-				JenkinsResultsParserUtil.getBuildProperty(
-					"cloud.ci.s3.bucket.build.reports.path"));
-		}
-		catch (IOException ioException) {
-			throw new RuntimeException(ioException);
 		}
 
 		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
@@ -237,28 +226,36 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 			return cachedDownstreamBuildReports;
 		}
 
+		Workspace workspace = workspaces.get(0);
+
+		WorkspaceGitRepository workspaceGitRepository =
+			workspace.getPrimaryWorkspaceGitRepository();
+
+		String path = JenkinsResultsParserUtil.combine(
+			workspaceGitRepository.getName(), "/",
+			workspaceGitRepository.getBaseBranchSHA(), "/",
+			workspaceGitRepository.getSenderBranchSHA(), "/", getBatchName());
+
 		File baseDir = new File(
 			System.getProperty("java.io.tmpdir"),
-			"cached-build-report-files/" + getBatchName());
+			"cached-build-report-files/" + path);
 
 		if (!baseDir.exists()) {
 			baseDir.mkdirs();
 
-			sb.append("/");
+			StringBuilder sb = new StringBuilder();
 
-			Workspace workspace = workspaces.get(0);
-
-			WorkspaceGitRepository workspaceGitRepository =
-				workspace.getPrimaryWorkspaceGitRepository();
-
-			sb.append(workspaceGitRepository.getName());
+			try {
+				sb.append(
+					JenkinsResultsParserUtil.getBuildProperty(
+						"cloud.ci.s3.bucket.build.reports.path"));
+			}
+			catch (IOException ioException) {
+				throw new RuntimeException(ioException);
+			}
 
 			sb.append("/");
-			sb.append(workspaceGitRepository.getBaseBranchSHA());
-			sb.append("/");
-			sb.append(workspaceGitRepository.getSenderBranchSHA());
-			sb.append("/");
-			sb.append(getBatchName());
+			sb.append(path);
 
 			CloudBucketUtil.syncS3Files(
 				JenkinsResultsParserUtil.getCanonicalPath(baseDir),
@@ -273,6 +270,12 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 
 		for (File buildReportFile : buildReportFiles) {
 			try {
+				String buildReportFileName = buildReportFile.getName();
+
+				if (buildReportFileName.endsWith(".sha512")) {
+					continue;
+				}
+
 				String buildReportFileContent = JenkinsResultsParserUtil.read(
 					buildReportFile);
 
@@ -335,6 +338,10 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		}
 
 		return topLevelJobName + batchJobSuffix;
+	}
+
+	public Map<String, List<String>> getGlobTestClassMethodNamesMap() {
+		return _globTestClassMethodNamesMap;
 	}
 
 	@Override
@@ -507,6 +514,12 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		return testTaskHistory.getTestTaskName();
 	}
 
+	public boolean isBuildCachingEnabled() {
+		Job job = getJob();
+
+		return job.isBuildCachingEnabled();
+	}
+
 	public boolean isTestAnalyticsCloud() {
 		if (_testAnalyticsCloud != null) {
 			return _testAnalyticsCloud;
@@ -644,6 +657,49 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 		Collections.sort(globs);
 
 		return globs;
+	}
+
+	protected List<PathMatcher> getIncludePathMatchers(
+		List<JobProperty> jobProperties) {
+
+		List<PathMatcher> pathMatchers = new ArrayList<>();
+
+		for (JobProperty jobProperty : jobProperties) {
+			if (!(jobProperty instanceof GlobJobProperty)) {
+				continue;
+			}
+
+			GlobJobProperty globJobProperty = (GlobJobProperty)jobProperty;
+
+			List<PathMatcher> globPathMatchers =
+				globJobProperty.getPathMatchers();
+
+			if (globPathMatchers == null) {
+				continue;
+			}
+
+			Map<String, List<String>> globTestClassMethodNamesMap =
+				globJobProperty.getGlobTestClassMethodNamesMap();
+
+			if ((globTestClassMethodNamesMap != null) &&
+				!globTestClassMethodNamesMap.isEmpty()) {
+
+				_globTestClassMethodNamesMap.putAll(
+					globTestClassMethodNamesMap);
+			}
+
+			for (PathMatcher globPathMatcher : globPathMatchers) {
+				if ((globPathMatcher == null) ||
+					pathMatchers.contains(globPathMatcher)) {
+
+					continue;
+				}
+
+				pathMatchers.add(globPathMatcher);
+			}
+		}
+
+		return pathMatchers;
 	}
 
 	protected List<JobProperty> getJobProperties(
@@ -1544,6 +1600,8 @@ public abstract class BatchTestClassGroup extends BaseTestClassGroup {
 	private final Map<String, Long> _averageTestOverheadDurations =
 		new HashMap<>();
 	private BatchHistory _batchHistory;
+	private final Map<String, List<String>> _globTestClassMethodNamesMap =
+		new HashMap<>();
 	private final List<JobProperty> _jobProperties = new ArrayList<>();
 	private final List<SegmentTestClassGroup> _segmentTestClassGroups =
 		new ArrayList<>();

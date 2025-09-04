@@ -71,6 +71,11 @@ public class FeatureFlagManagerUtil {
 			});
 	}
 
+	/**
+	 * @deprecated As of Cavanaugh (7.4.x), replaced by {@link
+	 *		#isEnabled(long, String)}
+	 */
+	@Deprecated
 	public static boolean isEnabled(String key) {
 		return _withFeatureFlagManager(
 			featureFlagManager -> featureFlagManager.isEnabled(key),
@@ -147,7 +152,7 @@ public class FeatureFlagManagerUtil {
 								servicePropertiesFunction.apply(enabled)));
 					},
 					MapUtil.singletonDictionary(
-						"featureFlagKey", featureFlagKey));
+						"feature.flag.key", featureFlagKey));
 		}
 
 		@Override

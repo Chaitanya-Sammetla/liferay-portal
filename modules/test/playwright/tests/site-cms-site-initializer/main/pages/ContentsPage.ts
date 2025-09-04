@@ -10,7 +10,26 @@ import {clickAndExpectToBeVisible} from '../../../../utils/clickAndExpectToBeVis
 import {PORTLET_URLS} from '../../../../utils/portletUrls';
 import {waitForAlert} from '../../../../utils/waitForAlert';
 
-type SidePanelName = 'General' | 'Comments';
+type SidePanelName = 'Categorization' | 'General' | 'Comments' | 'Schedule';
+
+type Field =
+	| {
+			label: string;
+			nth?: number;
+			value: string;
+	  }
+	| {
+			label: string;
+			nth?: number;
+			type: 'Rich Text';
+			value: string;
+	  }
+	| {
+			label: string;
+			nth?: number;
+			type: 'Checkbox';
+			value: boolean;
+	  };
 
 export class ContentsPage {
 	readonly page: Page;
@@ -22,13 +41,13 @@ export class ContentsPage {
 		this.page = page;
 
 		this.newButton = page.getByLabel('New');
-		this.publishButton = page.getByText('Publish');
+		this.publishButton = page.getByText('Publish', {exact: true});
 	}
 
 	async goto() {
 		await this.page.goto(PORTLET_URLS.cmsContents);
 
-		await this.newButton.waitFor();
+		await this.newButton.waitFor({state: 'visible'});
 	}
 
 	async closeSidePanel() {
@@ -52,6 +71,20 @@ export class ContentsPage {
 		});
 
 		await this.page.getByRole('tab', {name: 'General'}).waitFor();
+	}
+
+	async createFolder(folderName: string) {
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: this.page.getByRole('menuitem', {name: 'Folder'}),
+			trigger: this.newButton,
+		});
+
+		await this.page.getByRole('heading', {name: 'New Folder'}).waitFor();
+
+		await this.page.getByLabel('NameRequired').fill(folderName);
+
+		await this.page.getByRole('button', {name: 'Save'}).click();
 	}
 
 	async deleteContent(title: string) {
@@ -86,6 +119,35 @@ export class ContentsPage {
 		await this.openSidePanel('General');
 
 		await this.closeSidePanel();
+	}
+
+	async fillData(fields: Field[]) {
+		for (const field of fields) {
+			const element = this.page
+				.getByLabel(field.label)
+				.nth(field.nth || 0);
+
+			if (!('type' in field)) {
+				await element.fill(field.value);
+			}
+			else if (field.type === 'Rich Text') {
+				await element.getByRole('textbox').click();
+
+				await this.page.keyboard.type(field.value);
+			}
+			else if (field.type === 'Checkbox') {
+				await element.setChecked(field.value);
+			}
+		}
+	}
+
+	async navigateTo(folderName: string) {
+		await this.page
+			.getByRole('row', {name: folderName})
+			.getByRole('link')
+			.click();
+
+		await this.page.getByPlaceholder('Search').waitFor({state: 'visible'});
 	}
 
 	async openSidePanel(panelName: SidePanelName = 'General') {

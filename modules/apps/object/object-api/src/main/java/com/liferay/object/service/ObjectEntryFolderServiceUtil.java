@@ -116,6 +116,40 @@ public class ObjectEntryFolderServiceUtil {
 		return getService().getOSGiServiceIdentifier();
 	}
 
+	public static ObjectEntryFolder moveObjectEntryFolderToTrash(
+			long userId, ObjectEntryFolder objectEntryFolder,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().moveObjectEntryFolderToTrash(
+			userId, objectEntryFolder, serviceContext);
+	}
+
+	public static ObjectEntryFolder restoreObjectEntryFolderFromTrash(
+			long userId, ObjectEntryFolder objectEntryFolder,
+			com.liferay.portal.kernel.service.ServiceContext serviceContext)
+		throws PortalException {
+
+		return getService().restoreObjectEntryFolderFromTrash(
+			userId, objectEntryFolder, serviceContext);
+	}
+
+	public static void subscribeObjectEntryFolder(
+			long userId, long groupId, long objectEntryFolderId)
+		throws PortalException {
+
+		getService().subscribeObjectEntryFolder(
+			userId, groupId, objectEntryFolderId);
+	}
+
+	public static void unsubscribeObjectEntryFolder(
+			long userId, long groupId, long objectEntryFolderId)
+		throws PortalException {
+
+		getService().unsubscribeObjectEntryFolder(
+			userId, groupId, objectEntryFolderId);
+	}
+
 	public static ObjectEntryFolder updateObjectEntryFolder(
 			long objectEntryFolderId, long parentObjectEntryFolderId,
 			String description, Map<java.util.Locale, String> labelMap,

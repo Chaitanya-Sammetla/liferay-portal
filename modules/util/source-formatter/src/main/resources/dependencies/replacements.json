@@ -4515,6 +4515,16 @@
 	},
 	{
 		"classNames": [
+			"CommerceShippingEngine"
+		],
+		"classStructurePattern": true,
+		"issueKey": "LPD-48918",
+		"newMethods": [
+			"@Override\n\tpublic String getKey() {\n\t\treturn KEY;\n\t}"
+		]
+	},
+	{
+		"classNames": [
 			"DLFileEntryLocalService",
 			"DLFileEntryLocalServiceUtil"
 		],
@@ -5201,9 +5211,9 @@
 		"to": "addFileEntry(null, param#0#, param#1#, param#2#, param#3#, param#4#, param#5#, null, param#6#, param#7#, param#8#, null, null, null, param#9#)"
 	},
 	{
-		"from": "ServiceTrackerList<Class<T>, Class<E>>",
+		"from": "regex:ServiceTrackerList<\\w+(?:<[^<>]+>)?,\\s*(?<TypeName>\\w+(?:<[^<>]+>)?)>",
 		"issueKey": "LPS-195079",
-		"to": "ServiceTrackerList<typeParam#1#>"
+		"to": "ServiceTrackerList<${TypeName}>"
 	},
 	{
 		"classNames": [
@@ -5547,11 +5557,17 @@
 	{
 		"from": "PortletDisplayTemplateManager.DISPLAY_STYLE_PREFIX",
 		"issueKey": "LPS-202918",
+		"newImports": [
+			"com.liferay.portlet.display.template.constants.PortletDisplayTemplateConstants"
+		],
 		"to": "PortletDisplayTemplateConstants.DISPLAY_STYLE_PREFIX"
 	},
 	{
 		"from": "PortletDisplayTemplateManager.ENTRIES",
 		"issueKey": "LPS-202918",
+		"newImports": [
+			"com.liferay.portlet.display.template.constants.PortletDisplayTemplateConstants"
+		],
 		"to": "PortletDisplayTemplateConstants.ENTRIES"
 	},
 	{

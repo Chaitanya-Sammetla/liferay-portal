@@ -13,6 +13,8 @@ import com.liferay.depot.service.DepotEntryPinLocalService;
 import com.liferay.headless.asset.library.client.dto.v1_0.AssetLibrary;
 import com.liferay.headless.asset.library.client.dto.v1_0.MimeTypeLimit;
 import com.liferay.headless.asset.library.client.dto.v1_0.Settings;
+import com.liferay.headless.asset.library.client.pagination.Page;
+import com.liferay.headless.asset.library.client.pagination.Pagination;
 import com.liferay.headless.asset.library.client.problem.Problem;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.portal.kernel.language.Language;
@@ -23,11 +25,13 @@ import com.liferay.portal.kernel.service.UserGroupLocalService;
 import com.liferay.portal.kernel.service.UserLocalService;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.odata.entity.EntityField;
 import com.liferay.portal.test.rule.FeatureFlag;
 import com.liferay.portal.test.rule.Inject;
+import com.liferay.sharing.constants.SharingConfigurationConstants;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -70,6 +74,31 @@ public class AssetLibraryResourceTest extends BaseAssetLibraryResourceTestCase {
 
 	@Override
 	@Test
+	public void testGetAssetLibrariesPage() throws Exception {
+		super.testGetAssetLibrariesPage();
+
+		Page<AssetLibrary> page = assetLibraryResource.getAssetLibrariesPage(
+			null, null, "type eq 'Space'", Pagination.of(1, 10), null);
+
+		Assert.assertEquals(0, page.getTotalCount());
+
+		AssetLibrary randomAssetLibrary = randomAssetLibrary();
+
+		randomAssetLibrary.setType(AssetLibrary.Type.SPACE);
+
+		AssetLibrary assetLibrary = testGetAssetLibrariesPage_addAssetLibrary(
+			randomAssetLibrary);
+
+		page = assetLibraryResource.getAssetLibrariesPage(
+			null, null, "type eq 'Space'", Pagination.of(1, 10), null);
+
+		Assert.assertEquals(1, page.getTotalCount());
+
+		assetLibraryResource.deleteAssetLibrary(assetLibrary.getId());
+	}
+
+	@Override
+	@Test
 	public void testPatchAssetLibrary() throws Exception {
 		super.testPatchAssetLibrary();
 
@@ -107,6 +136,20 @@ public class AssetLibraryResourceTest extends BaseAssetLibraryResourceTestCase {
 			assetLibrary, autoTaggingEnabled, availableLanguageIds,
 			defaultLanguageId, logoColor, mimeTypeLimits, sharingEnabled,
 			useCustomLanguages);
+
+		settings = new Settings();
+
+		settings.setMimeTypeLimits(new MimeTypeLimit[0]);
+
+		assetLibrary.setSettings(settings);
+
+		assetLibrary = assetLibraryResource.patchAssetLibrary(
+			assetLibrary.getId(), assetLibrary);
+
+		_assertSettings(
+			assetLibrary, autoTaggingEnabled, availableLanguageIds,
+			defaultLanguageId, logoColor, new MimeTypeLimit[0], sharingEnabled,
+			useCustomLanguages);
 	}
 
 	@Override
@@ -123,7 +166,17 @@ public class AssetLibraryResourceTest extends BaseAssetLibraryResourceTestCase {
 					}
 				}
 			});
-		_testPostAssetLibrary(null);
+		_testPostAssetLibrary(new MimeTypeLimit[0]);
+
+		AssetLibrary randomAssetLibrary = randomAssetLibrary();
+
+		randomAssetLibrary.setType(AssetLibrary.Type.SPACE);
+
+		AssetLibrary postedAssetLibrary = assetLibraryResource.postAssetLibrary(
+			randomAssetLibrary);
+
+		Assert.assertEquals(
+			AssetLibrary.Type.SPACE, postedAssetLibrary.getType());
 	}
 
 	@Override
@@ -360,13 +413,13 @@ public class AssetLibraryResourceTest extends BaseAssetLibraryResourceTestCase {
 
 		MimeTypeLimit[] mimeTypeLimits = settings.getMimeTypeLimits();
 
-		if (expectedMimeTypeLimits == null) {
+		if (ArrayUtil.isEmpty(expectedMimeTypeLimits)) {
 			Assert.assertEquals(
 				Arrays.toString(mimeTypeLimits), 0, mimeTypeLimits.length);
 		}
 		else {
 			Assert.assertEquals(
-				Arrays.toString(mimeTypeLimits), mimeTypeLimits.length,
+				Arrays.toString(mimeTypeLimits), expectedMimeTypeLimits.length,
 				mimeTypeLimits.length);
 			Assert.assertEquals(expectedMimeTypeLimits[0], mimeTypeLimits[0]);
 		}
@@ -470,7 +523,8 @@ public class AssetLibraryResourceTest extends BaseAssetLibraryResourceTestCase {
 
 		_assertSettings(
 			assetLibrary, autoTaggingEnabled, availableLanguageIds,
-			defaultLanguageId, "outline-0", null, false, true);
+			defaultLanguageId, "outline-0", new MimeTypeLimit[0],
+			SharingConfigurationConstants.SHARING_ENABLED_DEFAULT, true);
 	}
 
 	@Inject

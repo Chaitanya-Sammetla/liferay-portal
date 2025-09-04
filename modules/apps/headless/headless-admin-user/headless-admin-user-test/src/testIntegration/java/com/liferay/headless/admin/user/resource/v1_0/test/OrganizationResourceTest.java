@@ -27,6 +27,8 @@ import com.liferay.expando.kernel.model.ExpandoColumnConstants;
 import com.liferay.expando.kernel.model.ExpandoTable;
 import com.liferay.expando.kernel.service.ExpandoColumnLocalService;
 import com.liferay.expando.kernel.service.ExpandoTableLocalService;
+import com.liferay.exportimport.test.rule.LazyReferencing;
+import com.liferay.exportimport.test.rule.LazyReferencingTestRule;
 import com.liferay.headless.admin.user.client.custom.field.CustomField;
 import com.liferay.headless.admin.user.client.custom.field.CustomValue;
 import com.liferay.headless.admin.user.client.dto.v1_0.AccountBrief;
@@ -116,6 +118,11 @@ import org.junit.runner.RunWith;
 @DataGuard(scope = DataGuard.Scope.METHOD)
 @RunWith(Arquillian.class)
 public class OrganizationResourceTest extends BaseOrganizationResourceTestCase {
+
+	@ClassRule
+	@Rule
+	public static final LazyReferencingTestRule lazyReferencingTestRule =
+		LazyReferencingTestRule.INSTANCE;
 
 	@ClassRule
 	@Rule
@@ -409,6 +416,7 @@ public class OrganizationResourceTest extends BaseOrganizationResourceTestCase {
 	}
 
 	@FeatureFlag("LPD-47858")
+	@LazyReferencing
 	@Override
 	@Test
 	public void testPostOrganization() throws Exception {
@@ -937,8 +945,19 @@ public class OrganizationResourceTest extends BaseOrganizationResourceTestCase {
 
 		long totalCount = page.getTotalCount();
 
+		// Sleep for 1 second to ensure that organization 1 and existing
+		// organizations are created 1 second apart
+
+		Thread.sleep(1000);
+
 		Organization organization1 = testGetOrganizationsPage_addOrganization(
 			randomOrganization());
+
+		// Sleep for 1 second to ensure that organization 1 and organization 2
+		// are created 1 second apart
+
+		Thread.sleep(1000);
+
 		Organization organization2 = testGetOrganizationsPage_addOrganization(
 			randomOrganization());
 
@@ -960,6 +979,11 @@ public class OrganizationResourceTest extends BaseOrganizationResourceTestCase {
 			Pagination.of(1, 2), null);
 
 		Assert.assertEquals(2, page.getTotalCount());
+
+		// Sleep for 1 second to ensure that organization 1 and organization 2
+		// are modified 1 second apart
+
+		Thread.sleep(1000);
 
 		organization1.setName(
 			StringUtil.toLowerCase(RandomTestUtil.randomString()));

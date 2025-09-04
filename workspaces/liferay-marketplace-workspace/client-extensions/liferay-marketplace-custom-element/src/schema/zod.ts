@@ -191,7 +191,11 @@ const zodSchema = {
 		name: z.string().min(3, i18n.sub('x-is-required', 'name')),
 	}),
 	extendSSATrial: z.object({
-		duration: z.number().int().max(60).min(1),
+		duration: z.coerce
+			.number()
+			.int()
+			.min(1, 'Please enter a valid number (1-60)')
+			.max(60, 'Please enter a valid number (1-60)'),
 		reason: z.string().min(3),
 	}),
 	generateLicenseKey: z.object({
@@ -283,16 +287,29 @@ const zodSchema = {
 		termsAndConditions: z.boolean().refine((data) => data === true),
 	},
 	ssaTrialForm: z.object({
-		demoDuration: z.coerce
+		duration: z.coerce
 			.number()
 			.int()
 			.min(1, 'Please enter a valid number (1-60)')
 			.max(60, 'Please enter a valid number (1-60)'),
 		emailAddress: z
-			.string()
-			.email({message: 'Please enter a valid email'})
-			.or(z.literal('')),
-		objective: z.string().refine((val) => ['Test', 'Trial'].includes(val), {
+			.array(
+				z.object({
+					key: z.string(),
+					label: z.string(),
+					value: z.string(),
+				})
+			)
+			.refine(
+				(emails) =>
+					emails.every(
+						(error) =>
+							z.string().email().safeParse(error.value).success
+					),
+				{message: 'One or more email addresses are invalid'}
+			)
+			.optional(),
+		objective: z.string().refine((val) => val, {
 			message: 'Select an Option',
 		}),
 		projectId: z
@@ -301,6 +318,7 @@ const zodSchema = {
 			.regex(/^[a-zA-Z0-9-]*$/, {
 				message: 'Only letters, numbers, and hyphens are allowed',
 			}),
+		siteInitializerKey: z.string(),
 	}),
 	trialForm: z.object({
 		accountId: z.string().optional(),

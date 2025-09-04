@@ -62,6 +62,7 @@ import {config as friendlyURLConfig} from './tests/friendly-url-web/main/config'
 import {config as frontendCssCadminWebConfig} from './tests/frontend-css-cadmin-web/main/config';
 import {config as frontendDataSetAdminWebConfig} from './tests/frontend-data-set-admin-web/main/config';
 import {config as frontendDataSetWebConfig} from './tests/frontend-data-set-web/main/config';
+import {config as frontendEditorAlloyEditorWebConfig} from './tests/frontend-editor-alloyeditor-web/main/config';
 import {config as frontendEditorCKEditorWebConfig} from './tests/frontend-editor-ckeditor-web/main/config';
 import {config as frontendJsBootstrapSupportWebConfig} from './tests/frontend-js-bootstrap-support-web/main/config';
 import {config as frontendJsComponentsWebConfig} from './tests/frontend-js-components-web/main/config';
@@ -80,6 +81,8 @@ import {config as itemSelectorTaglibConfig} from './tests/item-selector-taglib/m
 import {config as journalWebConfig} from './tests/journal-web/main/config';
 import {config as knowledgeBaseWebConfig} from './tests/knowledge-base-web/main/config';
 import {config as layoutAdminWebConfig} from './tests/layout-admin-web/main/config';
+import {config as layoutContentPageEditorWebFormContainerConfig} from './tests/layout-content-page-editor-web/form-container/config';
+import {config as layoutContentPageEditorWebFragmentsConfig} from './tests/layout-content-page-editor-web/fragments/config';
 import {config as layoutContentPageEditorWebConfig} from './tests/layout-content-page-editor-web/main/config';
 import {config as layoutLockedLayoutsWebConfig} from './tests/layout-locked-layouts-web/main/config';
 import {config as layoutPageTemplateAdminWebConfig} from './tests/layout-page-template-admin-web/main/config';
@@ -87,6 +90,7 @@ import {config as layoutSetPrototypeWebConfig} from './tests/layout-set-prototyp
 import {config as lockedItemsWebConfig} from './tests/locked-items-web/main/config';
 import {config as loginWebConfig} from './tests/login-web/main/config';
 import {config as loginWebSetupAdminConfig} from './tests/login-web/setup-admin/config';
+import {config as marketplaceAppManagerWebConfig} from './tests/marketplace-app-manager-web/main/config';
 import {config as messageBoardsWebConfig} from './tests/message-boards-web/main/config';
 import {config as multifactorAuthenticationConfig} from './tests/multi-factor-authentication-timebased-otp-web/main/config';
 import {config as multifactorAuthenticationWebConfig} from './tests/multi-factor-authentication-web/main/config';
@@ -225,6 +229,7 @@ export default defineConfig({
 		frontendCssCadminWebConfig,
 		frontendDataSetAdminWebConfig,
 		frontendDataSetWebConfig,
+		frontendEditorAlloyEditorWebConfig,
 		frontendEditorCKEditorWebConfig,
 		frontendJsBootstrapSupportWebConfig,
 		frontendJsComponentsWebConfig,
@@ -245,12 +250,15 @@ export default defineConfig({
 		knowledgeBaseWebConfig,
 		layoutAdminWebConfig,
 		layoutContentPageEditorWebConfig,
+		layoutContentPageEditorWebFormContainerConfig,
+		layoutContentPageEditorWebFragmentsConfig,
 		layoutLockedLayoutsWebConfig,
 		layoutPageTemplateAdminWebConfig,
 		layoutSetPrototypeWebConfig,
 		lockedItemsWebConfig,
 		loginWebConfig,
 		loginWebSetupAdminConfig,
+		marketplaceAppManagerWebConfig,
 		marketplaceConfig,
 		messageBoardsWebConfig,
 		multifactorAuthenticationConfig,

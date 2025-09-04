@@ -9,6 +9,7 @@ import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.UnsafeRunnable;
 import com.liferay.petra.string.StringBundler;
+import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DB;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.db.DBManagerUtil;
@@ -53,11 +54,11 @@ public class OrphanReferencesDataCleanupUtilTest {
 	}
 
 	@Test
-	public void testCleanUpExcludedTable() throws Exception {
+	public void testCleanUpTablesExcludedTable() throws Exception {
 		long auditEventId = RandomTestUtil.nextLong();
 		long companyId = RandomTestUtil.nextLong();
 
-		_test(
+		_testCleanUpTables(
 			logCapture -> {
 				List<LogEntry> logEntries = logCapture.getLogEntries();
 
@@ -77,10 +78,10 @@ public class OrphanReferencesDataCleanupUtilTest {
 	}
 
 	@Test
-	public void testCleanUpWithoutWhereClause() throws Exception {
+	public void testCleanUpTablesWithoutWhereClause() throws Exception {
 		long companyId = RandomTestUtil.nextLong();
 
-		_test(
+		_testCleanUpTables(
 			logCapture -> {
 				List<LogEntry> logEntries = logCapture.getLogEntries();
 
@@ -90,8 +91,9 @@ public class OrphanReferencesDataCleanupUtilTest {
 				LogEntry logEntry = logEntries.get(0);
 
 				Assert.assertEquals(
-					_getExpectedMessage(
-						2, _dbInspector.normalizeName("Portlet"),
+					_getCleanUpTableExpectedMessage(
+						2, _dbInspector.normalizeName("companyId"),
+						_dbInspector.normalizeName("Portlet"),
 						_dbInspector.normalizeName("companyId"),
 						_dbInspector.normalizeName("Company"), companyId),
 					logEntry.getMessage());
@@ -119,12 +121,12 @@ public class OrphanReferencesDataCleanupUtilTest {
 	}
 
 	@Test
-	public void testCleanUpWithWhereClause() throws Exception {
+	public void testCleanUpTablesWithWhereClause() throws Exception {
 		long companyId = RandomTestUtil.nextLong();
 		long ownerType1 = PortletKeys.PREFS_OWNER_TYPE_COMPANY;
 		long ownerType2 = PortletKeys.PREFS_OWNER_TYPE_GROUP;
 
-		_test(
+		_testCleanUpTables(
 			logCapture -> {
 				List<LogEntry> logEntries = logCapture.getLogEntries();
 
@@ -134,8 +136,9 @@ public class OrphanReferencesDataCleanupUtilTest {
 				LogEntry logEntry = logEntries.get(0);
 
 				Assert.assertEquals(
-					_getExpectedMessage(
-						2, _dbInspector.normalizeName("PortletPreferences"),
+					_getCleanUpTableExpectedMessage(
+						2, _dbInspector.normalizeName("ownerId"),
+						_dbInspector.normalizeName("PortletPreferences"),
 						_dbInspector.normalizeName("companyId"),
 						_dbInspector.normalizeName("Company"), companyId),
 					logEntry.getMessage());
@@ -177,21 +180,21 @@ public class OrphanReferencesDataCleanupUtilTest {
 			"companyId", "Company");
 	}
 
-	private String _getExpectedMessage(
-			long count, String sourceTableName, String targetColumn,
-			String targetTable, long targetValue)
+	private String _getCleanUpTableExpectedMessage(
+			long count, String sourceColumnName, String sourceTableName,
+			String targetColumnName, String targetTableName, long targetValue)
 		throws Exception {
 
 		return StringBundler.concat(
-			count, " orphan entries from table ",
-			_dbInspector.normalizeName(sourceTableName),
-			" have been deleted because value ", targetValue,
-			" was not found in the origin table ",
-			_dbInspector.normalizeName(targetTable), " and column ",
-			_dbInspector.normalizeName(targetColumn));
+			"Table ", _dbInspector.normalizeName(sourceTableName), ", ", count,
+			(count == 1) ? " row " : " rows ", "deleted because ",
+			_dbInspector.normalizeName(sourceColumnName), StringPool.SPACE,
+			targetValue, " was not found in ",
+			_dbInspector.normalizeName(targetTableName), StringPool.PERIOD,
+			_dbInspector.normalizeName(targetColumnName));
 	}
 
-	private void _test(
+	private void _testCleanUpTables(
 			UnsafeConsumer<LogCapture, Exception> assertUnsafeConsumer,
 			UnsafeRunnable<Exception> cleanUpDataUnsafeRunnable,
 			UnsafeRunnable<Exception> initializeDataUnsafeRunnable,

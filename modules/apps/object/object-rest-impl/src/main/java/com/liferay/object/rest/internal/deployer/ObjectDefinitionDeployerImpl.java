@@ -20,6 +20,7 @@ import com.liferay.object.rest.internal.jaxrs.context.provider.ObjectDefinitionC
 import com.liferay.object.rest.internal.jaxrs.exception.mapper.ObjectAssetCategoryExceptionMapper;
 import com.liferay.object.rest.internal.jaxrs.exception.mapper.ObjectEntryCountExceptionMapper;
 import com.liferay.object.rest.internal.jaxrs.exception.mapper.ObjectEntryExpirationDateExceptionMapper;
+import com.liferay.object.rest.internal.jaxrs.exception.mapper.ObjectEntryGroupIdExceptionMapper;
 import com.liferay.object.rest.internal.jaxrs.exception.mapper.ObjectEntryManagerHttpExceptionMapper;
 import com.liferay.object.rest.internal.jaxrs.exception.mapper.ObjectEntryStatusExceptionMapper;
 import com.liferay.object.rest.internal.jaxrs.exception.mapper.ObjectEntryValuesExceptionMapper;
@@ -217,7 +218,8 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 			_objectDefinitionsMap.get(restContextPath),
 			_objectDefinitionLocalService, _objectEntryLocalService,
 			_objectEntryManagerRegistry, _objectFieldLocalService,
-			_objectRelationshipService, _objectScopeProviderRegistry,
+			_objectRelationshipLocalService, _objectRelationshipService,
+			_objectScopeProviderRegistry,
 			_systemObjectDefinitionManagerRegistry);
 	}
 
@@ -375,6 +377,11 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 
 	private String _getEntityClassName(ObjectDefinition objectDefinition) {
 		return ObjectEntry.class.getName() + "#" +
+			StringUtil.toLowerCase(objectDefinition.getShortName());
+	}
+
+	private String _getResourceLocatorKey(ObjectDefinition objectDefinition) {
+		return objectDefinition.getRESTContextPath() + "/" +
 			StringUtil.toLowerCase(objectDefinition.getShortName());
 	}
 
@@ -655,13 +662,14 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 							() -> _createCollaboratorResourceImpl(),
 							_defaultPermissionCheckerFactory,
 							_expressionConvert, _filterParserProvider,
-							_groupLocalService, _resourceActionLocalService,
+							_groupLocalService,
+							_objectDefinitionsMap.get(restContextPath),
+							_resourceActionLocalService,
 							_resourcePermissionLocalService, _roleLocalService,
 							_sortParserProvider, _userLocalService),
 						HashMapDictionaryBuilder.<String, Object>put(
 							"resource.locator.key",
-							objectDefinition.getRESTContextPath() + "/" +
-								objectDefinition.getShortName()
+							_getResourceLocatorKey(objectDefinition)
 						).build()),
 					_bundleContext.registerService(
 						ContextProvider.class,
@@ -692,6 +700,7 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 											serviceRegistration) {
 
 								return new ObjectEntryRelatedObjectsResourceImpl(
+									_entityModelProvider,
 									_objectDefinitionLocalService,
 									_objectEntryLocalService,
 									_objectEntryManagerRegistry,
@@ -727,7 +736,8 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 							_companyLocalService,
 							_defaultPermissionCheckerFactory,
 							_expressionConvert, _filterParserProvider,
-							_groupLocalService, objectDefinition,
+							_groupLocalService,
+							_objectDefinitionsMap.get(restContextPath),
 							() -> _createObjectEntryResourceImpl(
 								null, restContextPath),
 							_resourceActionLocalService,
@@ -735,8 +745,7 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 							_sortParserProvider, _userLocalService),
 						HashMapDictionaryBuilder.<String, Object>put(
 							"resource.locator.key",
-							objectDefinition.getRESTContextPath() + "/" +
-								objectDefinition.getShortName()
+							_getResourceLocatorKey(objectDefinition)
 						).build())),
 				_registerExceptionMappers(osgiJaxRsName)));
 	}
@@ -809,10 +818,11 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 
 		return TransformUtil.transform(
 			Arrays.<Supplier<ExceptionMapper<?>>>asList(
-				ObjectAssetCategoryExceptionMapper::new,
 				ObjectEntryManagerHttpExceptionMapper::new,
+				() -> new ObjectAssetCategoryExceptionMapper(_language),
 				() -> new ObjectEntryCountExceptionMapper(_language),
 				() -> new ObjectEntryExpirationDateExceptionMapper(_language),
+				() -> new ObjectEntryGroupIdExceptionMapper(_language),
 				() -> new ObjectEntryStatusExceptionMapper(_language),
 				() -> new ObjectEntryValuesExceptionMapper(_language),
 				() -> new ObjectRelationshipDeletionTypeExceptionMapper(

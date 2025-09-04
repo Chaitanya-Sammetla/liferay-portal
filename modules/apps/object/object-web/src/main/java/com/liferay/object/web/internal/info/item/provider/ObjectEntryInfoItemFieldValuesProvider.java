@@ -33,6 +33,7 @@ import com.liferay.object.service.ObjectFieldLocalService;
 import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.object.web.internal.model.ProxyObjectEntry;
 import com.liferay.petra.reflect.ReflectionUtil;
+import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.cache.thread.local.Lifecycle;
 import com.liferay.portal.kernel.cache.thread.local.ThreadLocalCache;
@@ -108,6 +109,11 @@ public class ObjectEntryInfoItemFieldValuesProvider
 
 		String key = String.valueOf(objectEntry.getObjectEntryId());
 
+		if (objectEntry.getVersion() > 0) {
+			key = StringBundler.concat(
+				key, StringPool.POUND, objectEntry.getVersion());
+		}
+
 		InfoItemFieldValues infoItemFieldValues = threadLocalCache.get(key);
 
 		if (infoItemFieldValues != null) {
@@ -173,6 +179,10 @@ public class ObjectEntryInfoItemFieldValuesProvider
 				objectEntry.getCreateDate()));
 		objectEntryFieldValues.add(
 			new InfoFieldValue<>(
+				ObjectEntryInfoItemFields.expirationDateInfoField,
+				objectEntry.getExpirationDate()));
+		objectEntryFieldValues.add(
+			new InfoFieldValue<>(
 				ObjectEntryInfoItemFields.externalReferenceCodeInfoField,
 				objectEntry.getExternalReferenceCode()));
 		objectEntryFieldValues.add(
@@ -187,6 +197,10 @@ public class ObjectEntryInfoItemFieldValuesProvider
 			new InfoFieldValue<>(
 				ObjectEntryInfoItemFields.publishDateInfoField,
 				objectEntry.getLastPublishDate()));
+		objectEntryFieldValues.add(
+			new InfoFieldValue<>(
+				ObjectEntryInfoItemFields.reviewDateInfoField,
+				objectEntry.getReviewDate()));
 		objectEntryFieldValues.add(
 			new InfoFieldValue<>(
 				ObjectEntryInfoItemFields.statusInfoField,
@@ -261,12 +275,20 @@ public class ObjectEntryInfoItemFieldValuesProvider
 				objectEntry.getDateCreated()));
 		objectEntryFieldValues.add(
 			new InfoFieldValue<>(
+				ObjectEntryInfoItemFields.expirationDateInfoField,
+				objectEntry.getExpirationDate()));
+		objectEntryFieldValues.add(
+			new InfoFieldValue<>(
 				ObjectEntryInfoItemFields.modifiedDateInfoField,
 				objectEntry.getDateModified()));
 		objectEntryFieldValues.add(
 			new InfoFieldValue<>(
 				ObjectEntryInfoItemFields.publishDateInfoField,
 				objectEntry.getDateModified()));
+		objectEntryFieldValues.add(
+			new InfoFieldValue<>(
+				ObjectEntryInfoItemFields.reviewDateInfoField,
+				objectEntry.getReviewDate()));
 		objectEntryFieldValues.addAll(
 			ObjectEntryInfoItemValuesProviderUtil.getInfoFieldValues(
 				_dlAppLocalService, _dlURLHelper, _friendlyURLEntryLocalService,

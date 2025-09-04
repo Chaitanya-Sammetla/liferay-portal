@@ -6,6 +6,7 @@
 package com.liferay.jenkins.results.parser.test.clazz.group;
 
 import com.liferay.jenkins.results.parser.JenkinsResultsParserUtil;
+import com.liferay.jenkins.results.parser.test.clazz.ServiceBuilderAntTargetTestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClass;
 import com.liferay.jenkins.results.parser.test.clazz.TestClassMethod;
 
@@ -63,6 +64,10 @@ public class ModulesSegmentTestClassGroup extends SegmentTestClassGroup {
 			axisIndex);
 
 		for (TestClass testClass : axisTestClassGroup.getTestClasses()) {
+			if (testClass instanceof ServiceBuilderAntTargetTestClass) {
+				continue;
+			}
+
 			for (TestClassMethod testClassMethod :
 					testClass.getTestClassMethods()) {
 
@@ -71,7 +76,7 @@ public class ModulesSegmentTestClassGroup extends SegmentTestClassGroup {
 			}
 		}
 
-		if (!sb.isEmpty()) {
+		if (sb.length() > 0) {
 			sb.setLength(sb.length() - 1);
 		}
 

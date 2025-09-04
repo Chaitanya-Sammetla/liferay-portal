@@ -1544,6 +1544,113 @@ public abstract class BaseObjectEntryFolderResourceTestCase {
 	}
 
 	@Test
+	public void testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeRestore()
+		throws Exception {
+
+		ObjectEntryFolder randomObjectEntryFolder = randomObjectEntryFolder();
+
+		ObjectEntryFolder postObjectEntryFolder =
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeRestore_addObjectEntryFolder(
+				randomObjectEntryFolder);
+
+		assertEquals(randomObjectEntryFolder, postObjectEntryFolder);
+		assertValid(postObjectEntryFolder);
+	}
+
+	protected ObjectEntryFolder
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeRestore_addObjectEntryFolder(
+				ObjectEntryFolder objectEntryFolder)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribe()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		ObjectEntryFolder objectEntryFolder =
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribe_addObjectEntryFolder();
+
+		assertHttpResponseStatusCode(
+			204,
+			objectEntryFolderResource.
+				postScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribeHttpResponse(
+					testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribe_getScopeKey(
+						objectEntryFolder),
+					objectEntryFolder.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			objectEntryFolderResource.
+				postScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribeHttpResponse(
+					testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribe_getScopeKey(
+						objectEntryFolder),
+					"-"));
+	}
+
+	protected String
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribe_getScopeKey(
+				ObjectEntryFolder objectEntryFolder)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected ObjectEntryFolder
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeSubscribe_addObjectEntryFolder()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
+	public void testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribe()
+		throws Exception {
+
+		@SuppressWarnings("PMD.UnusedLocalVariable")
+		ObjectEntryFolder objectEntryFolder =
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribe_addObjectEntryFolder();
+
+		assertHttpResponseStatusCode(
+			204,
+			objectEntryFolderResource.
+				postScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribeHttpResponse(
+					testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribe_getScopeKey(
+						objectEntryFolder),
+					objectEntryFolder.getExternalReferenceCode()));
+
+		assertHttpResponseStatusCode(
+			404,
+			objectEntryFolderResource.
+				postScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribeHttpResponse(
+					testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribe_getScopeKey(
+						objectEntryFolder),
+					"-"));
+	}
+
+	protected String
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribe_getScopeKey(
+				ObjectEntryFolder objectEntryFolder)
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	protected ObjectEntryFolder
+			testPostScopeScopeKeyObjectEntryFolderByExternalReferenceCodeUnsubscribe_addObjectEntryFolder()
+		throws Exception {
+
+		throw new UnsupportedOperationException(
+			"This method needs to be implemented");
+	}
+
+	@Test
 	public void testPutObjectEntryFolder() throws Exception {
 		ObjectEntryFolder postObjectEntryFolder =
 			testPutObjectEntryFolder_addObjectEntryFolder();
@@ -1998,6 +2105,22 @@ public abstract class BaseObjectEntryFolderResourceTestCase {
 				continue;
 			}
 
+			if (Objects.equals("removedBy", additionalAssertFieldName)) {
+				if (objectEntryFolder.getRemovedBy() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("removedDate", additionalAssertFieldName)) {
+				if (objectEntryFolder.getRemovedDate() == null) {
+					valid = false;
+				}
+
+				continue;
+			}
+
 			if (Objects.equals("scopeKey", additionalAssertFieldName)) {
 				if (objectEntryFolder.getScopeKey() == null) {
 					valid = false;
@@ -2317,6 +2440,28 @@ public abstract class BaseObjectEntryFolderResourceTestCase {
 				if (!Objects.deepEquals(
 						objectEntryFolder1.getPermissions(),
 						objectEntryFolder2.getPermissions())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("removedBy", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectEntryFolder1.getRemovedBy(),
+						objectEntryFolder2.getRemovedBy())) {
+
+					return false;
+				}
+
+				continue;
+			}
+
+			if (Objects.equals("removedDate", additionalAssertFieldName)) {
+				if (!Objects.deepEquals(
+						objectEntryFolder1.getRemovedDate(),
+						objectEntryFolder2.getRemovedDate())) {
 
 					return false;
 				}
@@ -2761,6 +2906,40 @@ public abstract class BaseObjectEntryFolderResourceTestCase {
 				"Invalid entity field " + entityFieldName);
 		}
 
+		if (entityFieldName.equals("removedBy")) {
+			throw new IllegalArgumentException(
+				"Invalid entity field " + entityFieldName);
+		}
+
+		if (entityFieldName.equals("removedDate")) {
+			if (operator.equals("between")) {
+				Date date = objectEntryFolder.getRemovedDate();
+
+				sb = new StringBundler();
+
+				sb.append("(");
+				sb.append(entityFieldName);
+				sb.append(" gt ");
+				sb.append(_format.format(date.getTime() - (2 * Time.SECOND)));
+				sb.append(" and ");
+				sb.append(entityFieldName);
+				sb.append(" lt ");
+				sb.append(_format.format(date.getTime() + (2 * Time.SECOND)));
+				sb.append(")");
+			}
+			else {
+				sb.append(entityFieldName);
+
+				sb.append(" ");
+				sb.append(operator);
+				sb.append(" ");
+
+				sb.append(_format.format(objectEntryFolder.getRemovedDate()));
+			}
+
+			return sb.toString();
+		}
+
 		if (entityFieldName.equals("scopeKey")) {
 			Object object = objectEntryFolder.getScopeKey();
 
@@ -2916,6 +3095,7 @@ public abstract class BaseObjectEntryFolderResourceTestCase {
 				parentObjectEntryFolderExternalReferenceCode =
 					StringUtil.toLowerCase(RandomTestUtil.randomString());
 				parentObjectEntryFolderId = RandomTestUtil.randomLong();
+				removedDate = RandomTestUtil.nextDate();
 				scopeKey = StringUtil.toLowerCase(
 					RandomTestUtil.randomString());
 				title = StringUtil.toLowerCase(RandomTestUtil.randomString());

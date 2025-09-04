@@ -23,7 +23,7 @@ import getRandomString from '../../../utils/getRandomString';
 import {waitForAlert} from '../../../utils/waitForAlert';
 import getFragmentDefinition from '../../layout-content-page-editor-web/main/utils/getFragmentDefinition';
 import getPageDefinition from '../../layout-content-page-editor-web/main/utils/getPageDefinition';
-import {createObjectFields} from './utils/mockObjectFields';
+import {generateObjectFields} from './utils/generateObjectFields';
 
 export const test = mergeTests(
 	collectionsPagesTest,
@@ -521,6 +521,12 @@ test.describe('Manage object definitions through Model Builder', () => {
 		modelBuilderRightSidebarPage,
 		page,
 	}) => {
+		const objectFields = generateObjectFields({
+			objectFieldBusinessTypes: ['Text'],
+		});
+
+		const objectFieldName = objectFields[0].name;
+
 		const objectFolder =
 			await apiHelpers.objectAdmin.postRandomObjectFolder();
 
@@ -538,12 +544,7 @@ test.describe('Manage object definitions through Model Builder', () => {
 					pt_BR: 'Departamento',
 				},
 				name: 'Department',
-				objectFields: createObjectFields('text', [
-					{
-						label: 'Name',
-						name: 'name',
-					},
-				]),
+				objectFields,
 				objectFolderExternalReferenceCode:
 					objectFolder.externalReferenceCode,
 				panelCategoryKey: 'control_panel.object',
@@ -553,7 +554,7 @@ test.describe('Manage object definitions through Model Builder', () => {
 				},
 				scope: 'company',
 				status: {code: 0},
-				titleObjectFieldName: 'name',
+				titleObjectFieldName: objectFieldName,
 			});
 
 		apiHelpers.data.push({id: department.id, type: 'objectDefinition'});
@@ -609,7 +610,7 @@ test.describe('Manage object definitions through Model Builder', () => {
 			await modelBuilderRightSidebarPage.objectDefinitionLabelLocalizationButton.click();
 
 			await page
-				.getByRole('menuitem', {name: 'pt_BR Translated'})
+				.getByRole('option', {name: 'pt_BR language: Translated'})
 				.click();
 
 			await expect(
@@ -624,7 +625,9 @@ test.describe('Manage object definitions through Model Builder', () => {
 
 			await modelBuilderRightSidebarPage.objectDefinitionPluralLabelLocalizationButton.click();
 
-			await page.getByRole('menuitem', {name: 'en_US Default'}).click();
+			await page
+				.getByRole('option', {name: 'en_US language: Default'})
+				.click();
 
 			await expect(
 				modelBuilderRightSidebarPage.objectDefinitionPluralLabel

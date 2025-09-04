@@ -21,6 +21,7 @@ import com.liferay.asset.test.util.AssetTestUtil;
 import com.liferay.captcha.rest.client.dto.v1_0.Captcha;
 import com.liferay.captcha.rest.client.resource.v1_0.CaptchaResource;
 import com.liferay.captcha.simplecaptcha.SimpleCaptchaImpl;
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryGroupRelLocalService;
 import com.liferay.depot.service.DepotEntryLocalService;
@@ -150,6 +151,7 @@ import java.io.InputStream;
 
 import java.text.DateFormat;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
 import java.util.Collections;
@@ -705,6 +707,7 @@ public class UserAccountResourceTest extends BaseUserAccountResourceTestCase {
 
 		_testGetUserAccountsPageWithBirthDateFilter();
 		_testGetUserAccountsPageWithCustomFields();
+		_testGetUserAccountsPageWithSortFullName();
 	}
 
 	@Override
@@ -2070,6 +2073,40 @@ public class UserAccountResourceTest extends BaseUserAccountResourceTestCase {
 			userAccount);
 	}
 
+	private void _testGetUserAccountsPageWithSortFullName() throws Exception {
+		List<UserAccount> userAccounts = new ArrayList<>();
+		String domain = StringUtil.randomString() + ".com";
+
+		userAccounts.add(
+			userAccountResource.postUserAccount(
+				null, null,
+				_randomUserAccount(
+					userAccount -> {
+						userAccount.setGivenName("aaa");
+						userAccount.setEmailAddress("aaa@" + domain);
+					})));
+		userAccounts.add(
+			userAccountResource.postUserAccount(
+				null, null,
+				_randomUserAccount(
+					userAccount -> {
+						userAccount.setGivenName("bbb");
+						userAccount.setEmailAddress("bbb@" + domain);
+					})));
+
+		Page<UserAccount> page = userAccountResource.getUserAccountsPage(
+			domain, null, Pagination.of(1, 10), "name:asc");
+
+		assertEquals(userAccounts, (List<UserAccount>)page.getItems());
+
+		Collections.reverse(userAccounts);
+
+		page = userAccountResource.getUserAccountsPage(
+			domain, null, Pagination.of(1, 10), "name:desc");
+
+		assertEquals(userAccounts, (List<UserAccount>)page.getItems());
+	}
+
 	private void _testGetUserAccountWithGender() throws Exception {
 		PortletPreferences portletPreferences = PrefsPropsUtil.getPreferences(
 			testCompany.getCompanyId());
@@ -2185,7 +2222,7 @@ public class UserAccountResourceTest extends BaseUserAccountResourceTestCase {
 			HashMapBuilder.put(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()
 			).build(),
-			new HashMap<>(),
+			new HashMap<>(), DepotConstants.TYPE_ASSET_LIBRARY,
 			ServiceContextTestUtil.getServiceContext(
 				TestPropsValues.getGroupId(), user.getUserId()));
 

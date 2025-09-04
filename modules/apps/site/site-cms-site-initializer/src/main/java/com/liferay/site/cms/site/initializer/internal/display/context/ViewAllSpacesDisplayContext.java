@@ -67,8 +67,9 @@ public class ViewAllSpacesDisplayContext {
 	}
 
 	public String getAPIURL() {
-		return "/o/headless-asset-library/v1.0/asset-libraries?nestedFields=" +
-			"numberOfSites,numberOfUserAccounts,numberOfUserGroups";
+		return "/o/headless-asset-library/v1.0/asset-libraries?filter=type " +
+			"eq 'Space'&nestedFields=numberOfSites,numberOfUserAccounts," +
+				"numberOfUserGroups";
 	}
 
 	public List<DropdownItem> getBulkActionDropdownItems() {
@@ -126,7 +127,23 @@ public class ViewAllSpacesDisplayContext {
 			new FDSActionDropdownItem(
 				null, "users", "view-members",
 				LanguageUtil.get(_httpServletRequest, "view-members"), "get",
-				null, null),
+				"assign-members", null),
+			new FDSActionDropdownItem(
+				null, "users", "view-members",
+				LanguageUtil.get(_httpServletRequest, "view-members"), "get",
+				"view-members", null),
+			new FDSActionDropdownItem(
+				null, "globe", "view-sites",
+				LanguageUtil.format(
+					_httpServletRequest, "view-x",
+					LanguageUtil.get(_httpServletRequest, "sites")),
+				"get", "connect-sites", null),
+			new FDSActionDropdownItem(
+				null, "globe", "view-sites",
+				LanguageUtil.format(
+					_httpServletRequest, "view-x",
+					LanguageUtil.get(_httpServletRequest, "sites")),
+				"get", "view-sites", null),
 			new FDSActionDropdownItem(
 				PortletURLBuilder.create(
 					PortalUtil.getControlPanelPortletURL(

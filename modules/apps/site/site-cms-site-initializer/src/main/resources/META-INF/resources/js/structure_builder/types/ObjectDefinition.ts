@@ -35,6 +35,7 @@ export type ObjectDefinition = {
 	enableIndexSearch: boolean;
 	enableLocalization: boolean;
 	enableObjectEntryDraft: boolean;
+	enableObjectEntrySchedule: boolean;
 	enableObjectEntryVersioning: boolean;
 	externalReferenceCode: string;
 	id?: number;
@@ -55,6 +56,7 @@ export type ObjectDefinition = {
 	status?: {
 		code: number;
 	};
+	titleObjectFieldName?: string;
 };
 
 export type ObjectDefinitions = Record<

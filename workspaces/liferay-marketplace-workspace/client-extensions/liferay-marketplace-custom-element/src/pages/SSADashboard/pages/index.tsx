@@ -3,307 +3,66 @@
  * SPDX-License-Identifier: LGPL-2.1-or-later OR LicenseRef-Liferay-DXP-EULA-2.0.0-2023-06
  */
 
-import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import {useModal} from '@clayui/modal';
-import {useNavigate, useOutletContext} from 'react-router-dom';
 
-import Modal from '../../../components/Modal';
 import Page from '../../../components/Page';
 import {useMarketplaceContext} from '../../../context/MarketplaceContext';
-import SearchBuilder from '../../../core/SearchBuilder';
-import {
-	OrderStatus,
-	OrderTypes,
-	OrderWorkflowStatusCode,
-} from '../../../enums/Order';
-import {usePlacedOrders} from '../../../hooks/data/usePlacedOrder';
 import useModalContext from '../../../hooks/useModalContext';
 import i18n from '../../../i18n';
-import trialOAuth2 from '../../../services/oauth/Trial';
-import {Action} from '../../../utils/constants';
-import {useSSAForm} from '../components/SSAForm';
+import {useSSADashboardOutlet} from '../SSADashboardOutlet';
 import TrialListView from '../components/TrialListView/TrialListView';
-import {ExtendRequestStatus} from '../enums/SSATrials';
-import ExtendRequestModal from './ExtendRequestModal';
-import ExtendSSATrialModal from './ExtendSSATrialModal';
+import useSSAActions from '../useSSAActions';
 
 export default function SaaSTrials() {
-	const {marketplaceUserAccount, myUserAccount} = useMarketplaceContext();
-	const modal = useModal();
-	const modalContext = useModalContext();
-	const navigate = useNavigate();
-	const ssaForm = useSSAForm();
-	const {selectedAccount, ssaTrialExtend, ssaTrialExtendMutate} =
-		useOutletContext<any>();
-
-	const {
-		data: SSATrialsInProgress = {items: [], pageSize: 1, totalCount: 0},
-	} = usePlacedOrders({
-		filter: new SearchBuilder()
-			.eq('author', myUserAccount?.name)
-			.and()
-			.eq('orderTypeExternalReferenceCode', OrderTypes.SSA_SAAS)
-			.and()
-			.eq('orderStatusInfo/code', 0, {
-				unquote: true,
-			})
-			.build(),
-		page: 1,
-		pageSize: -1,
-	});
+	const {marketplaceUserAccount} = useMarketplaceContext();
+	const {onOpenModal} = useModalContext();
+	const {myTrialsInProgress} = useSSADashboardOutlet();
+	const actions = useSSAActions();
+	const createTrialFormModal = useModal();
 
 	const isSSAAdmin = marketplaceUserAccount.isSSAAdmin;
 
-	const canCreateTrial = isSSAAdmin
-		? true
-		: SSATrialsInProgress.totalCount <= 3;
-
-	const actions: Action[] = [
-		{
-			name: i18n.translate('details'),
-			onClick: (order: Order) => navigate(`details/${order.id}`),
-		},
-		{
-			disabled: (order: Order) =>
-				order.orderStatusInfo.label === OrderStatus.APPROVED ||
-				order.orderStatusInfo.label === OrderStatus.COMPLETED ||
-				order.orderStatusInfo.label === OrderStatus.PENDING,
-			name: i18n.translate('go-to-trial'),
-			onClick: (order: Order) =>
-				window.open(
-					`https://${
-						order?.customFields?.['trial-virtualhost'] as string
-					}`
-				),
-		},
-		{
-			hidden: (order: Order) => {
-				if (isSSAAdmin) {
-					const ssaTrialsExtendRequests = ssaTrialExtend.items;
-					const extendRequests = ssaTrialsExtendRequests?.filter(
-						(extend: TrialExtend) => {
-							return (
-								extend.r_orderToTrialExtensionRequest_commerceOrderId ===
-								Number(order.id)
-							);
-						}
-					) as TrialExtend[];
-
-					if (extendRequests && extendRequests?.length > 0) {
-						return (
-							extendRequests[0]?.dueStatus.key !==
-							ExtendRequestStatus.PENDING
-						);
-					}
-				}
-
-				return true;
-			},
-			name: i18n.translate('view-request'),
-			onClick: (order: PlacedOrder) => {
-				const ssaTrialsExtendRequests = ssaTrialExtend.items;
-				const extendRequests = ssaTrialsExtendRequests?.filter(
-					(extend: TrialExtend) => {
-						return (
-							extend.r_orderToTrialExtensionRequest_commerceOrderId ===
-							Number(order.id)
-						);
-					}
-				) as TrialExtend[];
-
-				if (!extendRequests) {
-					return;
-				}
-
-				modalContext.onOpenModal({
-					body: (
-						<ExtendRequestModal
-							onClose={modalContext.onClose}
-							order={order}
-							ssaTrialExtendMutate={ssaTrialExtendMutate}
-							trialExtend={extendRequests[0]}
-							trialExtendCount={extendRequests?.length}
-						/>
-					),
-					center: true,
-				});
-			},
-		},
-		{
-			disabled: (order: Order) => {
-				const ssaTrialsExtendRequests = ssaTrialExtend.items;
-				const extendRequests = ssaTrialsExtendRequests?.filter(
-					(extend: TrialExtend) => {
-						return (
-							extend.r_orderToTrialExtensionRequest_commerceOrderId ===
-							Number(order.id)
-						);
-					}
-				) as TrialExtend[];
-
-				if (!extendRequests) {
-					return true;
-				}
-
-				return (
-					[
-						OrderWorkflowStatusCode.COMPLETED,
-						OrderWorkflowStatusCode.PENDING,
-					].includes(order.orderStatus) ||
-					extendRequests[0]?.dueStatus.key ===
-						ExtendRequestStatus.PENDING
-				);
-			},
-			name: 'Extend',
-			onClick: (order: PlacedOrder) => {
-				const ssaTrialsExtendRequests = ssaTrialExtend.items;
-				const extendRequests = ssaTrialsExtendRequests?.filter(
-					(extend: TrialExtend) => {
-						return (
-							extend.r_orderToTrialExtensionRequest_commerceOrderId ===
-							Number(order.id)
-						);
-					}
-				) as TrialExtend[];
-
-				modalContext.onOpenModal({
-					body: (
-						<ExtendSSATrialModal
-							accountId={selectedAccount.id}
-							firstExtendRequest={extendRequests?.length === 0}
-							onClose={modalContext.onClose}
-							order={order}
-							ssaTrialExtendMutate={ssaTrialExtendMutate}
-						/>
-					),
-					header: `Extend ${order.id} Trial`,
-				});
-			},
-		},
-		{
-			disabled: (order: Order) =>
-				order.orderStatusInfo.label === OrderStatus.APPROVED ||
-				order.orderStatusInfo.label === OrderStatus.COMPLETED ||
-				order.orderStatusInfo.label === OrderStatus.PENDING,
-			name: 'Expire',
-			onClick: (order: Order, mutate) => {
-				modalContext.onOpenModal({
-					body: (
-						<div>
-							<ClayAlert displayType="warning" role={null}>
-								{i18n.translate('this-action-cannot-be-undone')}
-							</ClayAlert>
-							<p>
-								{i18n.translate(
-									'are-you-sure-you-want-to-expire-this-trial-this-action-imply-the-end-of-the-test-environment-permanently'
-								)}
-							</p>
-						</div>
-					),
-					footer: [
-						undefined,
-						undefined,
-						<div key="footer-buttons">
-							<ClayButton
-								aria-label="cancel"
-								displayType="secondary"
-								key={0}
-								onClick={modalContext.onClose}
-							>
-								{i18n.translate('cancel')}
-							</ClayButton>
-
-							<ClayButton
-								aria-label="close"
-								className="ml-4"
-								displayType="warning"
-								key={2}
-								onClick={async () => {
-									await trialOAuth2.expireTrial(order.id);
-
-									mutate(
-										{
-											...order,
-											orderStatusInfo: {
-												...order.orderStatusInfo,
-												label: OrderStatus.COMPLETED,
-											},
-										},
-										{
-											revalidate: false,
-										}
-									);
-
-									modalContext.onClose();
-								}}
-							>
-								{i18n.translate('got-it')}
-							</ClayButton>
-						</div>,
-					],
-					header: `Expire ${order.id} Trial`,
-					status: undefined,
-				});
-			},
-		},
-	];
+	const canCreateTrial = isSSAAdmin ? true : myTrialsInProgress < 3;
 
 	return (
-		<>
-			<Page
-				description={
-					isSSAAdmin
-						? i18n.translate('manage-your-teams-trial')
-						: i18n.translate('manage-your-current-trials')
-				}
-				pageRendererProps={{className: 'border py-2'}}
-				rightButton={
-					<ClayButton
-						onClick={() =>
-							canCreateTrial
-								? ssaForm.openModal()
-								: modal.onOpenChange(true)
+		<Page
+			description={i18n.translate('manage-your-current-trials')}
+			pageRendererProps={{className: 'border py-2'}}
+			rightButton={
+				<ClayButton
+					onClick={() => {
+						if (canCreateTrial) {
+							return createTrialFormModal.onOpenChange(true);
 						}
-					>
-						{i18n.translate('add-new-trial')}
-					</ClayButton>
-				}
-				title={isSSAAdmin ? 'SaaS Demos' : 'My SaaS Demos'}
-			>
-				<TrialListView
-					actions={actions}
-					isSortable
-					managementToolbarProps={{
-						searchVisible: true,
-						visible: isSSAAdmin ? true : false,
-					}}
-				/>
-			</Page>
 
-			{modal.open && (
-				<Modal
-					last={
-						<ClayButton
-							className="btn"
-							displayType="secondary"
-							onClick={() => modal.onClose()}
-						>
-							{i18n.translate('cancel')}
-						</ClayButton>
-					}
-					observer={modal.observer}
-					size={'md' as any}
-					title={i18n.translate('ssa-trials-limit-reached')}
-					visible={modal.open}
+						onOpenModal({
+							body: (
+								<span>
+									{i18n.translate(
+										'you-have-reached-the-maximum-number-of-active-trials-allowed-to-start-a-new-trial-please-end-one-of-your-existing-trials-first'
+									)}
+								</span>
+							),
+							header: i18n.translate('ssa-trials-limit-reached'),
+						});
+					}}
 				>
-					<span>
-						{i18n.translate(
-							'you-have-reached-the-maximum-number-of-active-trials-allowed-to-start-a-new-trial-please-end-one-of-your-existing-trials-first'
-						)}
-					</span>
-				</Modal>
-			)}
-		</>
+					{i18n.translate('add-new-trial')}
+				</ClayButton>
+			}
+			title="My SaaS Demos"
+		>
+			<TrialListView
+				actions={actions}
+				authorOnlyTrials
+				createTrialFormModal={createTrialFormModal}
+				isSortable
+				managementToolbarProps={{
+					searchVisible: true,
+					visible: isSSAAdmin,
+				}}
+			/>
+		</Page>
 	);
 }

@@ -80,7 +80,7 @@ public class OrdersDataSetFragmentRenderer implements FragmentRenderer {
 	}
 
 	@Override
-	public String getConfiguration(
+	public JSONObject getConfigurationJSONObject(
 		FragmentRendererContext fragmentRendererContext) {
 
 		ResourceBundle resourceBundle = ResourceBundleUtil.getBundle(
@@ -100,7 +100,7 @@ public class OrdersDataSetFragmentRenderer implements FragmentRenderer {
 				_log.debug(jsonException);
 			}
 
-			return StringPool.BLANK;
+			return null;
 		}
 	}
 
@@ -183,7 +183,9 @@ public class OrdersDataSetFragmentRenderer implements FragmentRenderer {
 				"{OrderDataSetPropsTransformer} from " +
 					"commerce-order-content-web");
 
-			if (FeatureFlagManagerUtil.isEnabled("LPD-10562")) {
+			if (FeatureFlagManagerUtil.isEnabled(
+					_portal.getCompanyId(httpServletRequest), "LPD-10562")) {
+
 				httpServletRequest.setAttribute(
 					"liferay-commerce:order-data-set:" +
 						"returnableOrderItemsContextParams",
@@ -243,8 +245,8 @@ public class OrdersDataSetFragmentRenderer implements FragmentRenderer {
 
 		return GetterUtil.getString(
 			_fragmentEntryConfigurationParser.getFieldValue(
-				getConfiguration(fragmentRendererContext),
-				fragmentEntryLink.getEditableValues(),
+				getConfigurationJSONObject(fragmentRendererContext),
+				fragmentEntryLink.getEditableValuesJSONObject(),
 				fragmentRendererContext.getLocale(), name));
 	}
 
@@ -296,7 +298,9 @@ public class OrdersDataSetFragmentRenderer implements FragmentRenderer {
 					_language.get(httpServletRequest, "reorder"), null, null,
 					"link"));
 
-			if (FeatureFlagManagerUtil.isEnabled("LPD-10562")) {
+			if (FeatureFlagManagerUtil.isEnabled(
+					_portal.getCompanyId(httpServletRequest), "LPD-10562")) {
+
 				fdsActionDropdownItems.add(
 					new FDSActionDropdownItem(
 						StringPool.BLANK, "undo", "return",

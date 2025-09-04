@@ -6,7 +6,9 @@
 package com.liferay.site.cms.site.initializer.internal.display.context;
 
 import com.liferay.depot.service.DepotEntryLocalService;
+import com.liferay.document.library.configuration.DLConfiguration;
 import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
+import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.object.constants.ObjectEntryFolderConstants;
 import com.liferay.object.constants.ObjectFolderConstants;
 import com.liferay.object.model.ObjectEntryFolder;
@@ -16,9 +18,9 @@ import com.liferay.object.service.ObjectEntryFolderLocalService;
 import com.liferay.petra.string.CharPool;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.petra.string.StringPool;
+import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
-import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.language.LanguageUtil;
 import com.liferay.portal.kernel.model.Group;
@@ -46,7 +48,7 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 
 	public ViewFolderSectionDisplayContext(
 		DepotEntryLocalService depotEntryLocalService,
-		GroupLocalService groupLocalService,
+		DLConfiguration dlConfiguration, GroupLocalService groupLocalService,
 		HttpServletRequest httpServletRequest, Language language,
 		ObjectDefinitionService objectDefinitionService,
 		ObjectDefinitionSettingLocalService objectDefinitionSettingLocalService,
@@ -56,8 +58,8 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 		Portal portal) {
 
 		super(
-			depotEntryLocalService, groupLocalService, httpServletRequest,
-			language, objectDefinitionService,
+			depotEntryLocalService, dlConfiguration, groupLocalService,
+			httpServletRequest, language, objectDefinitionService,
 			objectDefinitionSettingLocalService,
 			objectEntryFolderModelResourcePermission, portal);
 
@@ -74,7 +76,7 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 		Group group = groupLocalService.fetchGroup(
 			objectEntryFolder.getGroupId());
 
-		_addBreadcrumbItem(
+		addBreadcrumbItem(
 			jsonArray, false,
 			ActionUtil.getSpaceURL(group.getClassPK(), themeDisplay),
 			group.getName(themeDisplay.getLocale()));
@@ -88,16 +90,16 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 					_objectEntryFolderLocalService.fetchObjectEntryFolder(
 						GetterUtil.getLong(parts[i]));
 
-				_addBreadcrumbItem(
+				addBreadcrumbItem(
 					jsonArray, false,
-					ActionUtil.geViewFolderURL(
+					ActionUtil.getViewFolderURL(
 						objectEntryFolder.getObjectEntryFolderId(),
 						themeDisplay),
 					objectEntryFolder.getName());
 			}
 		}
 
-		_addBreadcrumbItem(jsonArray, true, null, objectEntryFolder.getName());
+		addBreadcrumbItem(jsonArray, true, null, objectEntryFolder.getName());
 
 		return HashMapBuilder.<String, Object>put(
 			"breadcrumbItems", jsonArray
@@ -113,6 +115,30 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 		).put(
 			"size", "sm"
 		).build();
+	}
+
+	@Override
+	public List<DropdownItem> getBulkActionDropdownItems() {
+		List<DropdownItem> fdsBulkActionDropdownItems =
+			super.getBulkActionDropdownItems();
+
+		fdsBulkActionDropdownItems.add(
+			new FDSActionDropdownItem(
+				"#", "download", "download",
+				LanguageUtil.get(httpServletRequest, "download"), null, null,
+				null));
+		fdsBulkActionDropdownItems.add(
+			new FDSActionDropdownItem(
+				null, "pencil", "edit-categories",
+				LanguageUtil.get(httpServletRequest, "edit-categories"), "post",
+				"edit-categories", null));
+		fdsBulkActionDropdownItems.add(
+			new FDSActionDropdownItem(
+				null, "pencil", "edit-tags",
+				LanguageUtil.get(httpServletRequest, "edit-tags"), "post",
+				"edit-tags", null));
+
+		return fdsBulkActionDropdownItems;
 	}
 
 	@Override
@@ -255,21 +281,40 @@ public class ViewFolderSectionDisplayContext extends BaseSectionDisplayContext {
 	}
 
 	@Override
-	protected String getCMSSectionFilterString() {
-		return null;
+	public Map<String, Object> getToolbarProps() throws PortalException {
+		return HashMapBuilder.<String, Object>putAll(
+			super.getToolbarProps()
+		).put(
+			"title",
+			() -> {
+				if (objectEntryFolder == null) {
+					return null;
+				}
+
+				String[] parts = StringUtil.split(
+					objectEntryFolder.getTreePath(), CharPool.SLASH);
+
+				if (parts.length == 0) {
+					return null;
+				}
+
+				ObjectEntryFolder rootObjectEntryFolder =
+					_objectEntryFolderLocalService.fetchObjectEntryFolder(
+						GetterUtil.getLong(parts[1]));
+
+				if (rootObjectEntryFolder == null) {
+					return null;
+				}
+
+				return rootObjectEntryFolder.getLabel(
+					themeDisplay.getLocale(), true);
+			}
+		).build();
 	}
 
-	private void _addBreadcrumbItem(
-		JSONArray jsonArray, boolean active, String friendlyURL, String label) {
-
-		jsonArray.put(
-			JSONUtil.put(
-				"active", active
-			).put(
-				"href", friendlyURL
-			).put(
-				"label", label
-			));
+	@Override
+	protected String getCMSSectionFilterString() {
+		return null;
 	}
 
 	private final ObjectEntryFolderLocalService _objectEntryFolderLocalService;

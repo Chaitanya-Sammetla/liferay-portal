@@ -35,6 +35,7 @@ const test = mergeTests(
 const testWithCKEditor4 = mergeTests(
 	test,
 	featureFlagsTest({
+		'LPD-11235': {enabled: false},
 		'LPS-178052': {enabled: true},
 	})
 );
@@ -68,7 +69,7 @@ testWithCKEditor4(
 
 		await page
 			.getByLabel('Control Menu')
-			.getByText('Edit', {exact: true})
+			.getByTitle('Edit', {exact: true})
 			.click();
 
 		await page.locator('.page-editor').waitFor();
@@ -110,7 +111,7 @@ testWithCKEditor4(
 
 		const editButton = page
 			.getByLabel('Control Menu')
-			.getByText('Edit', {exact: true});
+			.getByTitle('Edit', {exact: true});
 
 		await editButton.waitFor();
 		await editButton.click();
@@ -146,7 +147,7 @@ test(
 
 		await page
 			.getByLabel('Control Menu')
-			.getByText('Edit', {exact: true})
+			.getByTitle('Edit', {exact: true})
 			.click();
 
 		await page.locator('.page-editor').waitFor();
@@ -194,7 +195,7 @@ test(
 
 		const editButton = page
 			.getByLabel('Control Menu')
-			.getByText('Edit', {exact: true});
+			.getByTitle('Edit', {exact: true});
 
 		await editButton.waitFor();
 		await editButton.click();
@@ -430,91 +431,6 @@ test(
 		const image = page.locator('.component-paragraph img');
 
 		await expect(image).toHaveAttribute('alt', '');
-	}
-);
-
-test(
-	'A rich text editable accepts rich text, while a text editable does not',
-	{
-		tag: '@LPD-56399',
-	},
-	async ({apiHelpers, page, pageEditorPage, site}) => {
-
-		// Create a page with a Paragraph and Heading fragments with html
-
-		const html =
-			'<p><strong>List:</strong></p><ul><li><a href="option1Link">option1</a></li><li>option2</li><li>option3</li></ul>';
-
-		const headingId = getRandomString();
-		const headingDefinition = getFragmentDefinition({
-			fragmentFields: [
-				{
-					id: 'element-text',
-					value: {
-						fragmentLink: {},
-						text: {
-							value_i18n: {
-								en_US: html,
-							},
-						},
-					},
-				},
-			],
-			id: headingId,
-			key: 'BASIC_COMPONENT-heading',
-		});
-
-		const paragraphId = getRandomString();
-		const paragraphDefinition = getFragmentDefinition({
-			fragmentFields: [
-				{
-					id: 'element-text',
-					value: {
-						fragmentLink: {},
-						text: {
-							value_i18n: {
-								en_US: html,
-							},
-						},
-					},
-				},
-			],
-			id: paragraphId,
-			key: 'BASIC_COMPONENT-paragraph',
-		});
-
-		const layout = await apiHelpers.headlessDelivery.createSitePage({
-			pageDefinition: getPageDefinition([
-				headingDefinition,
-				paragraphDefinition,
-			]),
-			siteId: site.id,
-			title: getRandomString(),
-		});
-
-		// Go to edit mode and check the html in each fragment
-
-		await pageEditorPage.goto(layout, site.friendlyUrlPath);
-
-		const paragraphFragment = page.locator('.component-paragraph');
-
-		await paragraphFragment.waitFor();
-
-		await expect(paragraphFragment.locator('a')).toBeAttached();
-		await expect(paragraphFragment.locator('ul')).toBeAttached();
-		await expect(paragraphFragment.locator('li')).toHaveCount(3);
-		await expect(paragraphFragment).toContainText(
-			'List:option1option2option3'
-		);
-
-		const headingFragment = page.locator('.component-heading');
-
-		await expect(headingFragment.locator('a')).not.toBeAttached();
-		await expect(headingFragment.locator('ul')).not.toBeAttached();
-		await expect(headingFragment.locator('li')).toHaveCount(0);
-		await expect(headingFragment).toContainText(
-			'List:option1option2option3'
-		);
 	}
 );
 

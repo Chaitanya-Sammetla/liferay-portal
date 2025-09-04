@@ -151,6 +151,10 @@ public class AccountGroupsAdminPortletDataHandlerTest {
 							HashMapBuilder.put(
 								PortletDataHandlerKeys.PORTLET_DATA,
 								new String[] {Boolean.TRUE.toString()}
+							).put(
+								PortletDataHandlerKeys.PORTLET_DATA + "_" +
+									AccountPortletKeys.ACCOUNT_GROUPS_ADMIN,
+								new String[] {Boolean.TRUE.toString()}
 							).build()));
 
 		_exportImportLocalService.importLayouts(
@@ -170,7 +174,7 @@ public class AccountGroupsAdminPortletDataHandlerTest {
 				TestPropsValues.getCompanyId());
 
 		Assert.assertEquals(
-			WorkflowConstants.STATUS_INCOMPLETE, accountEntry.getStatus());
+			WorkflowConstants.STATUS_EMPTY, accountEntry.getStatus());
 
 		List<ExportImportReportEntry> exportImportReportEntries =
 			_exportImportReportEntryLocalService.getExportImportReportEntries(

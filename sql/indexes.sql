@@ -89,7 +89,7 @@ create index IX_B59A9078 on Country (uuid_[$COLUMN_LENGTH:75$]);
 
 create unique index IX_E22A5911 on CountryLocalization (countryId, languageId[$COLUMN_LENGTH:75$], ctCollectionId);
 
-create index IX_4CB1B2B4 on DLFileEntry (companyId);
+create index IX_65686609 on DLFileEntry (companyId, classNameId, classPK);
 create index IX_B8526DBE on DLFileEntry (custom1ImageId);
 create index IX_AC9BDEDD on DLFileEntry (custom2ImageId);
 create index IX_772ECDE7 on DLFileEntry (fileEntryTypeId);
@@ -342,8 +342,9 @@ create index IX_D4C6FBCB on RememberMeToken (expirationDate);
 create index IX_291F58D4 on RememberMeToken (userId);
 
 create unique index IX_1F8735E5 on Repository (groupId, ctCollectionId, externalReferenceCode[$COLUMN_LENGTH:75$]);
-create unique index IX_470608AE on Repository (groupId, ctCollectionId, name[$COLUMN_LENGTH:200$], portletId[$COLUMN_LENGTH:200$]);
+create unique index IX_6DEF5CC on Repository (groupId, ctCollectionId, portletId[$COLUMN_LENGTH:200$], name[$COLUMN_LENGTH:200$]);
 create unique index IX_E9E7CCD8 on Repository (groupId, uuid_[$COLUMN_LENGTH:75$], ctCollectionId);
+create index IX_1D689875 on Repository (portletId[$COLUMN_LENGTH:200$]);
 create index IX_74C17B04 on Repository (uuid_[$COLUMN_LENGTH:75$]);
 
 create unique index IX_B43A3F67 on RepositoryEntry (repositoryId, ctCollectionId, mappedId[$COLUMN_LENGTH:255$]);

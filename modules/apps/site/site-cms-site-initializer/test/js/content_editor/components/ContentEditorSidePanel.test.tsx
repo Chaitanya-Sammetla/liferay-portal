@@ -11,16 +11,32 @@ import React from 'react';
 import ContentEditorSidePanel from '../../../../src/main/resources/META-INF/resources/js/content_editor/components/ContentEditorSidePanel';
 import {mockFetch} from '../../__mocks__/frontend-js-web';
 
+const EXPIRATION_DATE = '2025-08-14T00:01';
+const REVIEW_DATE = '2025-08-15T00:01';
+
+jest.mock('frontend-js-web', () => ({
+	...(jest.requireActual('frontend-js-web') as object),
+	dateUtils: {
+		getFirstDayOfWeek: jest.fn(),
+		getMonthsLong: jest.fn(),
+		getWeekdaysShort: jest.fn(),
+	},
+}));
+
 const renderComponent = ({isSubscribed = false} = {}) => {
 	return render(
 		<ContentEditorSidePanel
 			addCommentURL="addCommentURL"
 			comments={[]}
+			contentAPIURL="contentAPIURL"
 			deleteCommentURL="deleteCommentURL"
 			editCommentURL="editCommentURL"
 			editorConfig={{}}
+			expirationDate={EXPIRATION_DATE}
+			groupId="21000"
 			id="contentId"
 			isSubscribed={isSubscribed}
+			reviewDate={REVIEW_DATE}
 			subscribeURL="subscribeURL"
 			type="Content Type"
 			version="Version 1"
@@ -32,9 +48,9 @@ describe('ContentEditorSidePanel', () => {
 	it('renders ContentEditorSidePanel', () => {
 		renderComponent();
 
-		expect(screen.getByLabelText('general')).toBeInTheDocument();
-
-		expect(screen.getByLabelText('comments')).toBeInTheDocument();
+		['general', 'comments', 'schedule', 'categorization'].forEach((name) =>
+			expect(screen.getByLabelText(name)).toBeInTheDocument()
+		);
 	});
 
 	it('closes the panel pressing the Close button', async () => {
@@ -130,6 +146,56 @@ describe('ContentEditorSidePanel', () => {
 					'you-have-successfully-unsubscribed-from-comments'
 				)
 			).toBeInTheDocument();
+		});
+	});
+
+	it('renders the hidden inputs with initial values', async () => {
+		renderComponent();
+
+		const expirationInput: HTMLInputElement | null = document.querySelector(
+			'[name="expirationDate"]'
+		);
+		const reviewInput: HTMLInputElement | null = document.querySelector(
+			'[name="reviewDate"]'
+		);
+
+		expect(expirationInput?.value).toBe(EXPIRATION_DATE);
+		expect(reviewInput?.value).toBe(REVIEW_DATE);
+	});
+
+	it('persists the schedule field value when checking Never Expire and switching tabs', async () => {
+		renderComponent();
+
+		await userEvent.click(screen.getByLabelText('schedule'));
+
+		await waitFor(() => {
+			expect(screen.getByText('schedule')).toBeInTheDocument();
+		});
+
+		const expireCheckbox = screen.getAllByLabelText('never-expire')[0];
+
+		expect(expireCheckbox).not.toBeChecked();
+
+		await userEvent.click(expireCheckbox);
+
+		await waitFor(() => {
+			expect(expireCheckbox).toBeChecked();
+		});
+
+		await userEvent.click(screen.getByLabelText('general'));
+
+		await waitFor(() => {
+			expect(screen.getByText('general')).toBeInTheDocument();
+		});
+
+		await userEvent.click(screen.getByLabelText('schedule'));
+
+		await waitFor(() => {
+			expect(screen.getByText('schedule')).toBeInTheDocument();
+			expect(expireCheckbox).toBeChecked();
+			expect(
+				screen.getByRole('textbox', {name: 'expiration-date'})
+			).toHaveValue('08/14/2025 12:01 AM');
 		});
 	});
 });

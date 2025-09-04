@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.databind.util.ISO8601DateFormat;
 
+import com.liferay.depot.constants.DepotConstants;
 import com.liferay.depot.model.DepotEntry;
 import com.liferay.depot.service.DepotEntryLocalServiceUtil;
 import com.liferay.headless.asset.library.client.dto.v1_0.UserAccount;
@@ -21,7 +22,11 @@ import com.liferay.headless.asset.library.client.pagination.Page;
 import com.liferay.headless.asset.library.client.pagination.Pagination;
 import com.liferay.headless.asset.library.client.resource.v1_0.UserAccountResource;
 import com.liferay.headless.asset.library.client.serdes.v1_0.UserAccountSerDes;
+import com.liferay.headless.batch.engine.client.dto.v1_0.ImportTask;
+import com.liferay.headless.batch.engine.client.http.HttpInvoker.HttpResponse;
+import com.liferay.headless.batch.engine.client.resource.v1_0.ImportTaskResource;
 import com.liferay.petra.function.UnsafeTriConsumer;
+import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.petra.string.StringBundler;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
@@ -46,7 +51,6 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 import com.liferay.portal.util.PropsValues;
 import com.liferay.portal.vulcan.resource.EntityModelResource;
-import com.liferay.portal.vulcan.util.TransformUtil;
 
 import jakarta.annotation.Generated;
 
@@ -104,7 +108,7 @@ public abstract class BaseUserAccountResourceTestCase {
 		irrelevantDepotEntry = DepotEntryLocalServiceUtil.addDepotEntry(
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
-			null,
+			null, DepotConstants.TYPE_ASSET_LIBRARY,
 			new ServiceContext() {
 				{
 					setCompanyId(testCompany.getCompanyId());
@@ -115,7 +119,7 @@ public abstract class BaseUserAccountResourceTestCase {
 		testDepotEntry = DepotEntryLocalServiceUtil.addDepotEntry(
 			Collections.singletonMap(
 				LocaleUtil.getDefault(), RandomTestUtil.randomString()),
-			null,
+			null, DepotConstants.TYPE_ASSET_LIBRARY,
 			new ServiceContext() {
 				{
 					setCompanyId(testCompany.getCompanyId());
@@ -130,6 +134,16 @@ public abstract class BaseUserAccountResourceTestCase {
 			testCompany.getCompanyId());
 
 		userAccountResource = UserAccountResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).locale(
+			LocaleUtil.getDefault()
+		).build();
+
+		importTaskResource = ImportTaskResource.builder(
 		).authentication(
 			_testCompanyAdminUser.getEmailAddress(),
 			PropsValues.DEFAULT_ADMIN_PASSWORD
@@ -212,36 +226,36 @@ public abstract class BaseUserAccountResourceTestCase {
 	}
 
 	@Test
-	public void testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode()
+	public void testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode()
 		throws Exception {
 
 		@SuppressWarnings("PMD.UnusedLocalVariable")
 		UserAccount userAccount =
-			testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_addUserAccount();
+			testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_addUserAccount();
 
 		assertHttpResponseStatusCode(
 			204,
 			userAccountResource.
-				deleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCodeHttpResponse(
-					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
-					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode()));
+				deleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCodeHttpResponse(
+					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
+					userAccount.getExternalReferenceCode()));
 
 		assertHttpResponseStatusCode(
 			404,
 			userAccountResource.
-				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCodeHttpResponse(
-					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
-					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode()));
+				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCodeHttpResponse(
+					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
+					userAccount.getExternalReferenceCode()));
 		assertHttpResponseStatusCode(
 			404,
 			userAccountResource.
-				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCodeHttpResponse(
-					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
-					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode()));
+				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCodeHttpResponse(
+					testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
+					"-"));
 	}
 
 	protected UserAccount
-			testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_addUserAccount()
+			testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_addUserAccount()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -249,15 +263,7 @@ public abstract class BaseUserAccountResourceTestCase {
 	}
 
 	protected String
-			testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode()
+			testDeleteAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -274,18 +280,17 @@ public abstract class BaseUserAccountResourceTestCase {
 			204,
 			userAccountResource.deleteAssetLibraryUserAccountHttpResponse(
 				testDeleteAssetLibraryUserAccount_getAssetLibraryId(),
-				testDeleteAssetLibraryUserAccount_getUserId()));
+				userAccount.getId()));
 
 		assertHttpResponseStatusCode(
 			404,
 			userAccountResource.getAssetLibraryUserAccountHttpResponse(
 				testDeleteAssetLibraryUserAccount_getAssetLibraryId(),
-				testDeleteAssetLibraryUserAccount_getUserId()));
+				userAccount.getId()));
 		assertHttpResponseStatusCode(
 			404,
 			userAccountResource.getAssetLibraryUserAccountHttpResponse(
-				testDeleteAssetLibraryUserAccount_getAssetLibraryId(),
-				testDeleteAssetLibraryUserAccount_getUserId()));
+				testDeleteAssetLibraryUserAccount_getAssetLibraryId(), 0L));
 	}
 
 	protected UserAccount testDeleteAssetLibraryUserAccount_addUserAccount()
@@ -302,32 +307,25 @@ public abstract class BaseUserAccountResourceTestCase {
 			"This method needs to be implemented");
 	}
 
-	protected Long testDeleteAssetLibraryUserAccount_getUserId()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
 	@Test
-	public void testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode()
+	public void testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode()
 		throws Exception {
 
 		UserAccount postUserAccount =
-			testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_addUserAccount();
+			testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_addUserAccount();
 
 		UserAccount getUserAccount =
 			userAccountResource.
-				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode(
-					testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
-					testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode());
+				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode(
+					testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
+					postUserAccount.getExternalReferenceCode());
 
 		assertEquals(postUserAccount, getUserAccount);
 		assertValid(getUserAccount);
 	}
 
 	protected UserAccount
-			testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_addUserAccount()
+			testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_addUserAccount()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -335,15 +333,7 @@ public abstract class BaseUserAccountResourceTestCase {
 	}
 
 	protected String
-			testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode()
+			testGetAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -717,7 +707,7 @@ public abstract class BaseUserAccountResourceTestCase {
 		UserAccount getUserAccount =
 			userAccountResource.getAssetLibraryUserAccount(
 				testGetAssetLibraryUserAccount_getAssetLibraryId(),
-				testGetAssetLibraryUserAccount_getUserId());
+				postUserAccount.getId());
 
 		assertEquals(postUserAccount, getUserAccount);
 		assertValid(getUserAccount);
@@ -733,11 +723,6 @@ public abstract class BaseUserAccountResourceTestCase {
 	protected Long testGetAssetLibraryUserAccount_getAssetLibraryId()
 		throws Exception {
 
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected Long testGetAssetLibraryUserAccount_getUserId() throws Exception {
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
@@ -1075,35 +1060,35 @@ public abstract class BaseUserAccountResourceTestCase {
 	}
 
 	@Test
-	public void testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode()
+	public void testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode()
 		throws Exception {
 
 		UserAccount postUserAccount =
-			testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_addUserAccount();
+			testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_addUserAccount();
 
 		UserAccount randomUserAccount = randomUserAccount();
 
 		UserAccount putUserAccount =
 			userAccountResource.
-				putAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode(
-					testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
-					testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode());
+				putAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode(
+					testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
+					postUserAccount.getExternalReferenceCode());
 
 		assertEquals(randomUserAccount, putUserAccount);
 		assertValid(putUserAccount);
 
 		UserAccount getUserAccount =
 			userAccountResource.
-				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode(
-					testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
-					testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode());
+				getAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode(
+					testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode(),
+					putUserAccount.getExternalReferenceCode());
 
 		assertEquals(randomUserAccount, getUserAccount);
 		assertValid(getUserAccount);
 	}
 
 	protected UserAccount
-			testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_addUserAccount()
+			testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_addUserAccount()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -1111,15 +1096,7 @@ public abstract class BaseUserAccountResourceTestCase {
 	}
 
 	protected String
-			testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getAssetLibraryExternalReferenceCode()
-		throws Exception {
-
-		throw new UnsupportedOperationException(
-			"This method needs to be implemented");
-	}
-
-	protected String
-			testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserExternalReferenceCode_getUserExternalReferenceCode()
+			testPutAssetLibraryByExternalReferenceCodeAssetLibraryExternalReferenceCodeUserAccountByExternalReferenceCodeUserAccountExternalReferenceCode_getAssetLibraryExternalReferenceCode()
 		throws Exception {
 
 		throw new UnsupportedOperationException(
@@ -1136,7 +1113,7 @@ public abstract class BaseUserAccountResourceTestCase {
 		UserAccount putUserAccount =
 			userAccountResource.putAssetLibraryUserAccount(
 				testPutAssetLibraryUserAccount_getAssetLibraryId(),
-				testPutAssetLibraryUserAccount_getUserId());
+				postUserAccount.getId());
 
 		assertEquals(randomUserAccount, putUserAccount);
 		assertValid(putUserAccount);
@@ -1144,7 +1121,7 @@ public abstract class BaseUserAccountResourceTestCase {
 		UserAccount getUserAccount =
 			userAccountResource.getAssetLibraryUserAccount(
 				testPutAssetLibraryUserAccount_getAssetLibraryId(),
-				testPutAssetLibraryUserAccount_getUserId());
+				putUserAccount.getId());
 
 		assertEquals(randomUserAccount, getUserAccount);
 		assertValid(getUserAccount);
@@ -1164,7 +1141,65 @@ public abstract class BaseUserAccountResourceTestCase {
 			"This method needs to be implemented");
 	}
 
-	protected Long testPutAssetLibraryUserAccount_getUserId() throws Exception {
+	@Test
+	public void testBatchEngineDeleteImportTask() throws Exception {
+		UserAccount userAccount1 =
+			testBatchEngineDeleteImportTask_addAssetLibraryUserAccount();
+
+		testBatchEngineDeleteImportTask_deleteUserAccount(
+			200, userAccount1.getExternalReferenceCode(),
+			"assetLibraryExternalReferenceCode",
+			testDepotEntryGroup.getExternalReferenceCode());
+
+		assertHttpResponseStatusCode(
+			404,
+			userAccountResource.getAssetLibraryUserAccountHttpResponse(
+				testBatchEngineDeleteImportTask_getAssetLibraryId(),
+				userAccount1.getId()));
+	}
+
+	protected UserAccount
+			testBatchEngineDeleteImportTask_addAssetLibraryUserAccount()
+		throws Exception {
+
+		return testDeleteAssetLibraryUserAccount_addUserAccount();
+	}
+
+	protected void testBatchEngineDeleteImportTask_deleteUserAccount(
+			int expectedStatusCode, String externalReferenceCode,
+			String... parameters)
+		throws Exception {
+
+		ImportTaskResource importTaskResource = ImportTaskResource.builder(
+		).authentication(
+			_testCompanyAdminUser.getEmailAddress(),
+			PropsValues.DEFAULT_ADMIN_PASSWORD
+		).endpoint(
+			testCompany.getVirtualHostname(), 8080, "http"
+		).parameters(
+			parameters
+		).build();
+
+		HttpResponse httpResponse =
+			importTaskResource.deleteImportTaskHttpResponse(
+				"com.liferay.headless.asset.library.dto.v1_0.UserAccount", null,
+				null, null, null,
+				JSONUtil.putAll(
+					JSONUtil.put(
+						"externalReferenceCode", () -> externalReferenceCode)));
+
+		Assert.assertEquals(expectedStatusCode, httpResponse.getStatusCode());
+
+		if (expectedStatusCode == 200) {
+			waitForFinish(
+				"COMPLETED",
+				JSONFactoryUtil.createJSONObject(httpResponse.getContent()));
+		}
+	}
+
+	protected Long testBatchEngineDeleteImportTask_getAssetLibraryId()
+		throws Exception {
+
 		throw new UnsupportedOperationException(
 			"This method needs to be implemented");
 	}
@@ -1771,7 +1806,30 @@ public abstract class BaseUserAccountResourceTestCase {
 		return randomUserAccount();
 	}
 
+	protected final JSONObject waitForFinish(
+			String expectedExecuteStatus, JSONObject jsonObject)
+		throws Exception {
+
+		while (true) {
+			ImportTask importTask = importTaskResource.getImportTask(
+				jsonObject.getLong("id"));
+
+			ImportTask.ExecuteStatus executeStatus =
+				importTask.getExecuteStatus();
+
+			if (StringUtil.equals(executeStatus.getValue(), "COMPLETED") ||
+				StringUtil.equals(executeStatus.getValue(), "FAILED")) {
+
+				Assert.assertEquals(
+					expectedExecuteStatus, executeStatus.getValue());
+
+				return jsonObject;
+			}
+		}
+	}
+
 	protected UserAccountResource userAccountResource;
+	protected ImportTaskResource importTaskResource;
 	protected com.liferay.portal.kernel.model.Group irrelevantGroup;
 	protected com.liferay.portal.kernel.model.Company testCompany;
 	protected DepotEntry irrelevantDepotEntry;

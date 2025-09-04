@@ -146,8 +146,12 @@ public abstract class Base${schemaName}ResourceImpl
 		</#if>
 
 		<#assign
-			generatePermissions = freeMarkerTool.isGeneratePermissions(configYAML, javaMethodSignature, javaMethodSignatures, schema, schemaName)
+			generatePermissions = false
+			getParentPermissionsPageJavaMethodSignature = ""
+			getPermissionsPageJavaMethodSignature = ""
 			httpMethod = freeMarkerTool.getHTTPMethod(javaMethodSignature.operation)
+			putParentPermissionsPageJavaMethodSignature = ""
+			putPermissionsPageJavaMethodSignature = ""
 			parentSchemaName = javaMethodSignature.parentSchemaName!
 		/>
 
@@ -197,7 +201,23 @@ public abstract class Base${schemaName}ResourceImpl
 			</#if>
 		</#if>
 
-		<#if generatePermissions>
+		<#if freeMarkerTool.isGeneratePermissions(configYAML, javaMethodSignature, javaMethodSignatures, schema, schemaName)>
+			<#assign
+				getPermissionsPageJavaMethodSignature = freeMarkerTool.getJavaMethodSignature(javaMethodSignatures, "get" + schemaName + "PermissionsPage")!""
+				putPermissionsPageJavaMethodSignature = freeMarkerTool.getJavaMethodSignature(javaMethodSignatures, "put" + schemaName + "PermissionsPage")!""
+			/>
+
+			<#if !(getPermissionsPageJavaMethodSignature?has_content || putPermissionsPageJavaMethodSignature?has_content)>
+				<#assign
+					getParentPermissionsPageJavaMethodSignature = freeMarkerTool.getParentPermissionsPageJavaMethodSignature("get", javaMethodSignatures, parentSchemaName, schemaName)!""
+					putParentPermissionsPageJavaMethodSignature = freeMarkerTool.getParentPermissionsPageJavaMethodSignature("put", javaMethodSignatures, parentSchemaName, schemaName)!""
+				/>
+			</#if>
+		</#if>
+
+		<#if ((getPermissionsPageJavaMethodSignature?has_content && putPermissionsPageJavaMethodSignature?has_content) || (getParentPermissionsPageJavaMethodSignature?has_content && putParentPermissionsPageJavaMethodSignature?has_content))>
+			<#assign generatePermissions = true />
+
 			protected abstract ${javaMethodSignature.returnType} do${stringUtil.upperCaseFirstLetter(javaMethodSignature.methodName)}(${freeMarkerTool.getResourceParameters(configYAML, javaMethodSignature.javaMethodParameters, javaMethodSignature.operation, allSchemas, false)}) throws Exception;
 
 			<#if configYAML.application??>
@@ -230,13 +250,18 @@ public abstract class Base${schemaName}ResourceImpl
 							for (${schemaName} ${schemaVarName} : ${schemaVarNames}Page.getItems()) {
 								${schemaVarName}.setPermissions(
 									() -> NestedFieldsSupplier.supply("permissions", nestedField -> {
-										Page<Permission> permissionsPage = get${schemaName}PermissionsPage(
-											<#if properties?keys?seq_contains("id")>
-												${schemaVarName}.getId()
-											<#elseif properties?keys?seq_contains(schemaVarName + "Id")>
-												${schemaVarName}.get${schemaVarName}Id()
-											<#else>
-												${schemaVarName}Id
+										Page<Permission> permissionsPage =
+											<#if getPermissionsPageJavaMethodSignature?has_content>
+												${getPermissionsPageJavaMethodSignature.methodName}(
+													<#if properties?keys?seq_contains("id")>
+														${schemaVarName}.getId()
+													<#elseif properties?keys?seq_contains(schemaVarName + "Id")>
+														${schemaVarName}.get${schemaVarName}Id()
+													<#else>
+														${schemaVarName}Id
+													</#if>
+											<#elseif getParentPermissionsPageJavaMethodSignature?has_content>
+												${getParentPermissionsPageJavaMethodSignature.methodName}(${parentSchemaName?uncap_first}ExternalReferenceCode, ${schemaVarName}.getExternalReferenceCode()
 											</#if>
 
 											, null);
@@ -253,20 +278,25 @@ public abstract class Base${schemaName}ResourceImpl
 						<#if properties?keys?seq_contains("permissions")>
 							${httpMethod}${schemaName}.setPermissions(
 								() -> NestedFieldsSupplier.supply("permissions", nestedField -> {
-										Page<Permission> permissionsPage = get${schemaName}PermissionsPage(
-											<#if properties?keys?seq_contains("id")>
-												${httpMethod}${schemaName}.getId()
-											<#elseif properties?keys?seq_contains(schemaVarName + "Id")>
-												${httpMethod}${schemaName}.get${schemaVarName}Id()
-											<#else>
-												${schemaVarName}Id
-											</#if>
+									Page<Permission> permissionsPage =
+										<#if getPermissionsPageJavaMethodSignature?has_content>
+											${getPermissionsPageJavaMethodSignature.methodName}(
+												<#if properties?keys?seq_contains("id")>
+													${httpMethod}${schemaName}.getId()
+												<#elseif properties?keys?seq_contains(schemaVarName + "Id")>
+													${httpMethod}${schemaName}.get${schemaVarName}Id()
+												<#else>
+													${schemaVarName}Id
+												</#if>
+										<#elseif getParentPermissionsPageJavaMethodSignature?has_content>
+											${getParentPermissionsPageJavaMethodSignature.methodName}(${parentSchemaName?uncap_first}ExternalReferenceCode, ${httpMethod}${schemaName}.getExternalReferenceCode()
+										</#if>
 
-											, null);
+										, null);
 
-										Collection<Permission> permissions = permissionsPage.getItems();
+									Collection<Permission> permissions = permissionsPage.getItems();
 
-										return permissions.toArray(new Permission[permissions.size()]);
+									return permissions.toArray(new Permission[permissions.size()]);
 								}));
 
 							return ${httpMethod}${schemaName};
@@ -287,15 +317,19 @@ public abstract class Base${schemaName}ResourceImpl
 						);
 
 					if (permissions != null) {
-						Page<Permission> permissionsPage = put${schemaName}PermissionsPage(
-							<#if properties?keys?seq_contains("id")>
-								${httpMethod}${schemaName}.getId()
-							<#elseif properties?keys?seq_contains(schemaVarName + "Id")>
-								${httpMethod}${schemaName}.get${schemaVarName}Id()
-							<#else>
-								${schemaVarName}Id
+						Page<Permission> permissionsPage =
+							<#if putPermissionsPageJavaMethodSignature?has_content>
+								${putPermissionsPageJavaMethodSignature.methodName}(
+									<#if properties?keys?seq_contains("id")>
+										${httpMethod}${schemaName}.getId()
+									<#elseif properties?keys?seq_contains(schemaVarName + "Id")>
+										${httpMethod}${schemaName}.get${schemaVarName}Id()
+									<#else>
+										${schemaVarName}Id
+									</#if>
+							<#elseif putParentPermissionsPageJavaMethodSignature?has_content>
+								${putParentPermissionsPageJavaMethodSignature.methodName}(${parentSchemaName?uncap_first}ExternalReferenceCode, ${httpMethod}${schemaName}.getExternalReferenceCode()
 							</#if>
-
 							, permissions);
 
 						${httpMethod}${schemaName}.setPermissions(
@@ -308,7 +342,6 @@ public abstract class Base${schemaName}ResourceImpl
 
 					return ${httpMethod}${schemaName};
 				</#if>
-
 			}
 
 			<#continue>
@@ -393,19 +426,23 @@ public abstract class Base${schemaName}ResourceImpl
 					throw new UnsupportedOperationException("This method needs to be implemented");
 				</#if>
 			<#elseif stringUtil.equals(javaMethodSignature.methodName, "getAssetLibrary" + schemaName + "PermissionsPage")>
-				<#assign generateGetPermissionCheckerMethods = true />
+				<#if freeMarkerTool.hasParameter(javaMethodSignature, "assetLibraryId")>
+					<#assign generateGetPermissionCheckerMethods = true />
 
-				String portletName = getPermissionCheckerPortletName(assetLibraryId);
+					String portletName = getPermissionCheckerPortletName(assetLibraryId);
 
-				PermissionServiceUtil.checkPermission(assetLibraryId, portletName, assetLibraryId);
+					PermissionServiceUtil.checkPermission(assetLibraryId, portletName, assetLibraryId);
 
-				return toPermissionPage(
-					<@getActions
-						resourceId="assetLibraryId"
-						resourceName="portletName"
-						source="AssetLibrary" + schemaName
-					/>,
-					assetLibraryId, portletName, roleNames);
+					return toPermissionPage(
+						<@getActions
+							resourceId="assetLibraryId"
+							resourceName="portletName"
+							source="AssetLibrary" + schemaName
+						/>,
+						assetLibraryId, portletName, roleNames);
+				<#else>
+					throw new UnsupportedOperationException("This method needs to be implemented");
+				</#if>
 			<#elseif stringUtil.equals(javaMethodSignature.methodName, "getSite" + schemaName + "PermissionsPage")>
 				<#if freeMarkerTool.hasParameter(javaMethodSignature, "siteId")>
 					<#assign generateGetPermissionCheckerMethods = true />
@@ -446,21 +483,25 @@ public abstract class Base${schemaName}ResourceImpl
 					throw new UnsupportedOperationException("This method needs to be implemented");
 				</#if>
 			<#elseif stringUtil.equals(javaMethodSignature.methodName, "putAssetLibrary" + schemaName + "PermissionsPage")>
-				<#assign generateGetPermissionCheckerMethods = true />
+				<#if freeMarkerTool.hasParameter(javaMethodSignature, "assetLibraryId")>
+					<#assign generateGetPermissionCheckerMethods = true />
 
-				String portletName = getPermissionCheckerPortletName(assetLibraryId);
+					String portletName = getPermissionCheckerPortletName(assetLibraryId);
 
-				<@updateResourcePermissions
-					groupId = "assetLibraryId"
-					resourceId = "assetLibraryId"
-					resourceName = "portletName"
-				>
-					<@getActions
-						resourceId="assetLibraryId"
-						resourceName="portletName"
-						source="AssetLibrary" + schemaName
-					/>
-				</@updateResourcePermissions>
+					<@updateResourcePermissions
+						groupId = "assetLibraryId"
+						resourceId = "assetLibraryId"
+						resourceName = "portletName"
+					>
+						<@getActions
+							resourceId="assetLibraryId"
+							resourceName="portletName"
+							source="AssetLibrary" + schemaName
+						/>
+					</@updateResourcePermissions>
+				<#else>
+					throw new UnsupportedOperationException("This method needs to be implemented");
+				</#if>
 			<#elseif stringUtil.equals(javaMethodSignature.methodName, "putSite" + schemaName + "PermissionsPage")>
 				<#if freeMarkerTool.hasParameter(javaMethodSignature, "siteId")>
 					<#assign generateGetPermissionCheckerMethods = true />
@@ -776,7 +817,7 @@ public abstract class Base${schemaName}ResourceImpl
 										<#elseif stringUtil.equals(javaMethodParameter.parameterName, schemaVarName)>
 											${schemaVarName}
 										<#elseif stringUtil.equals(javaMethodParameter.parameterName, "multipartBody")>
-											null
+											(MultipartBody)null
 										<#else>
 											${javaMethodParameter.parameterName}
 										</#if>
@@ -1227,7 +1268,7 @@ public abstract class Base${schemaName}ResourceImpl
 						<#elseif stringUtil.equals(javaMethodParameter.parameterName, schemaVarName)>
 							${schemaVarName}
 						<#elseif stringUtil.equals(javaMethodParameter.parameterName, "multipartBody")>
-							null
+							(MultipartBody)null
 						<#else>
 							<@castParameters
 								type = javaMethodParameter.parameterType
@@ -1268,7 +1309,7 @@ public abstract class Base${schemaName}ResourceImpl
 								value = "${javaMethodSignature.parentSchemaName?uncap_first}Id"
 							/>
 						<#elseif stringUtil.equals(javaMethodParameter.parameterName, "multipartBody")>
-							null
+							(MultipartBody)null
 						<#else>
 							<@castParameters
 								type = javaMethodParameter.parameterType
@@ -1617,6 +1658,16 @@ public abstract class Base${schemaName}ResourceImpl
 		return TransformUtil.transform(collection, unsafeFunction);
 	}
 
+	<#if freeMarkerTool.isVersionCompatible(configYAML, 11)>
+		public static <R, E extends Throwable> R[] transform(int[] array, UnsafeFunction<Integer, R, E> unsafeFunction, Class<? extends R> clazz) {
+			return TransformUtil.transform(array, unsafeFunction, clazz);
+		}
+
+		public static <R, E extends Throwable> R[] transform(long[] array, UnsafeFunction<Long, R, E> unsafeFunction, Class<? extends R> clazz) {
+			return TransformUtil.transform(array, unsafeFunction, clazz);
+		}
+	</#if>
+
 	protected <T, R, E extends Throwable> R[] transform(T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<? extends R> clazz) {
 		return TransformUtil.transform(array, unsafeFunction, clazz);
 	}
@@ -1624,6 +1675,56 @@ public abstract class Base${schemaName}ResourceImpl
 	protected <T, R, E extends Throwable> R[] transformToArray(Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction, Class<? extends R> clazz) {
 		return TransformUtil.transformToArray(collection, unsafeFunction, clazz);
 	}
+
+	<#if freeMarkerTool.isVersionCompatible(configYAML, 11)>
+		public static <T, E extends Throwable> boolean[] transformToBooleanArray(Collection<T> collection, UnsafeFunction<T, Boolean, E> unsafeFunction) {
+			return TransformUtil.transformToBooleanArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> boolean[] transformToBooleanArray(T[] array, UnsafeFunction<T, Boolean, E> unsafeFunction) {
+			return TransformUtil.transformToBooleanArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> byte[] transformToByteArray(Collection<T> collection, UnsafeFunction<T, Byte, E> unsafeFunction) {
+			return TransformUtil.transformToByteArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> byte[] transformToByteArray(T[] array, UnsafeFunction<T, Byte, E> unsafeFunction) {
+			return TransformUtil.transformToByteArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> double[] transformToDoubleArray(Collection<T> collection, UnsafeFunction<T, Double, E> unsafeFunction) {
+			return TransformUtil.transformToDoubleArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> double[] transformToDoubleArray(T[] array, UnsafeFunction<T, Double, E> unsafeFunction) {
+			return TransformUtil.transformToDoubleArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> float[] transformToFloatArray(Collection<T> collection, UnsafeFunction<T, Float, E> unsafeFunction) {
+			return TransformUtil.transformToFloatArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> float[] transformToFloatArray(T[] array, UnsafeFunction<T, Float, E> unsafeFunction) {
+			return TransformUtil.transformToFloatArray(array, unsafeFunction);
+		}
+
+		public static <T, R, E extends Throwable> int[] transformToIntArray(Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) {
+			return TransformUtil.transformToIntArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> int[] transformToIntArray(T[] array, UnsafeFunction<T, Integer, E> unsafeFunction) {
+			return TransformUtil.transformToIntArray(array, unsafeFunction);
+		}
+
+		public static <R, E extends Throwable> List<R> transformToList(int[] array, UnsafeFunction<Integer, R, E> unsafeFunction) {
+			return TransformUtil.transformToList(array, unsafeFunction);
+		}
+
+		public static <R, E extends Throwable> List<R> transformToList(long[] array, UnsafeFunction<Long, R, E> unsafeFunction) {
+			return TransformUtil.transformToList(array, unsafeFunction);
+		}
+	</#if>
 
 	protected <T, R, E extends Throwable> List<R> transformToList(T[] array, UnsafeFunction<T, R, E> unsafeFunction) {
 		return TransformUtil.transformToList(array, unsafeFunction);
@@ -1642,9 +1743,33 @@ public abstract class Base${schemaName}ResourceImpl
 		</#if>
 	}
 
+	<#if freeMarkerTool.isVersionCompatible(configYAML, 11)>
+		public static <T, E extends Throwable> long[] transformToLongArray(T[] array, UnsafeFunction<T, Long, E> unsafeFunction) {
+			return TransformUtil.transformToLongArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> short[] transformToShortArray(Collection<T> collection, UnsafeFunction<T, Short, E> unsafeFunction) {
+			return TransformUtil.transformToShortArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> short[] transformToShortArray(T[] array, UnsafeFunction<T, Short, E> unsafeFunction) {
+			return TransformUtil.transformToShortArray(array, unsafeFunction);
+		}
+	</#if>
+
 	protected <T, R, E extends Throwable> List<R> unsafeTransform(Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) throws E {
 		return TransformUtil.unsafeTransform(collection, unsafeFunction);
 	}
+
+	<#if freeMarkerTool.isVersionCompatible(configYAML, 11)>
+		public static <R, E extends Throwable> R[] unsafeTransform(int[] array, UnsafeFunction<Integer, R, E> unsafeFunction, Class<? extends R> clazz) throws E {
+			return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
+		}
+
+		public static <R, E extends Throwable> R[] unsafeTransform(long[] array, UnsafeFunction<Long, R, E> unsafeFunction, Class<? extends R> clazz) throws E {
+			return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
+		}
+	</#if>
 
 	protected <T, R, E extends Throwable> R[] unsafeTransform(T[] array, UnsafeFunction<T, R, E> unsafeFunction, Class<? extends R> clazz) throws E {
 		return TransformUtil.unsafeTransform(array, unsafeFunction, clazz);
@@ -1653,6 +1778,56 @@ public abstract class Base${schemaName}ResourceImpl
 	protected <T, R, E extends Throwable> R[] unsafeTransformToArray(Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction, Class<? extends R> clazz) throws E {
 		return TransformUtil.unsafeTransformToArray(collection, unsafeFunction, clazz);
 	}
+
+	<#if freeMarkerTool.isVersionCompatible(configYAML, 11)>
+		public static <T, E extends Throwable> boolean[] unsafeTransformToBooleanArray(Collection<T> collection, UnsafeFunction<T, Boolean, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToBooleanArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> boolean[] unsafeTransformToBooleanArray(T[] array, UnsafeFunction<T, Boolean, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToBooleanArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> byte[] unsafeTransformToByteArray(Collection<T> collection, UnsafeFunction<T, Byte, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToByteArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> byte[] unsafeTransformToByteArray(T[] array, UnsafeFunction<T, Byte, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToByteArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> double[] unsafeTransformToDoubleArray(Collection<T> collection, UnsafeFunction<T, Double, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToDoubleArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> double[] unsafeTransformToDoubleArray(T[] array, UnsafeFunction<T, Double, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToDoubleArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> float[] unsafeTransformToFloatArray(Collection<T> collection, UnsafeFunction<T, Float, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToFloatArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> float[] unsafeTransformToFloatArray(T[] array, UnsafeFunction<T, Float, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToFloatArray(array, unsafeFunction);
+		}
+
+		public static <T, R, E extends Throwable> int[] unsafeTransformToIntArray(Collection<T> collection, UnsafeFunction<T, R, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToIntArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> int[] unsafeTransformToIntArray(T[] array, UnsafeFunction<T, Integer, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToIntArray(array, unsafeFunction);
+		}
+
+		public static <R, E extends Throwable> List<R> unsafeTransformToList(int[] array, UnsafeFunction<Integer, R, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToList(array, unsafeFunction);
+		}
+
+		public static <R, E extends Throwable> List<R> unsafeTransformToList(long[] array, UnsafeFunction<Long, R, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToList(array, unsafeFunction);
+		}
+	</#if>
 
 	protected <T, R, E extends Throwable> List<R> unsafeTransformToList(T[] array, UnsafeFunction<T, R, E> unsafeFunction) throws E {
 		return TransformUtil.unsafeTransformToList(array, unsafeFunction);
@@ -1665,6 +1840,20 @@ public abstract class Base${schemaName}ResourceImpl
 			return (long[])_unsafeTransformToPrimitiveArray(collection, unsafeFunction, long[].class);
 		</#if>
 	}
+
+	<#if freeMarkerTool.isVersionCompatible(configYAML, 11)>
+		public static <T, E extends Throwable> long[] unsafeTransformToLongArray(T[] array, UnsafeFunction<T, Long, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToLongArray(array, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> short[] unsafeTransformToShortArray(Collection<T> collection, UnsafeFunction<T, Short, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToShortArray(collection, unsafeFunction);
+		}
+
+		public static <T, E extends Throwable> short[] unsafeTransformToShortArray(T[] array, UnsafeFunction<T, Short, E> unsafeFunction) throws E {
+			return TransformUtil.unsafeTransformToShortArray(array, unsafeFunction);
+		}
+	</#if>
 
 	protected AcceptLanguage contextAcceptLanguage;
 
@@ -1814,7 +2003,7 @@ public abstract class Base${schemaName}ResourceImpl
 		<#elseif freeMarkerTool.isExternalReferenceCodeParameter(javaMethodParameter, schemaName) && properties?keys?seq_contains("externalReferenceCode") && freeMarkerTool.isParameterNameSchemaRelated(javaMethodParameter.parameterName, javaMethodSignature.path, schemaName)>
 			${schemaVarName}.getExternalReferenceCode()
 		<#elseif stringUtil.equals(javaMethodParameter.parameterName, "multipartBody")>
-			null
+			(MultipartBody)null
 		<#else>
 			<@castParameters
 				type = javaMethodParameter.parameterType

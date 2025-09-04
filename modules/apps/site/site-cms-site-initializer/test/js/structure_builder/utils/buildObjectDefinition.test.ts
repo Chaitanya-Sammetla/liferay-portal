@@ -71,6 +71,7 @@ describe('buildObjectDefinition', () => {
 			enableIndexSearch: true,
 			enableLocalization: true,
 			enableObjectEntryDraft: true,
+			enableObjectEntrySchedule: true,
 			enableObjectEntryVersioning: true,
 			externalReferenceCode: 'structureERC',
 			label: {en_US: 'Structure'},
@@ -96,6 +97,7 @@ describe('buildObjectDefinition', () => {
 			status: {
 				code: 2,
 			},
+			titleObjectFieldName: 'title',
 		});
 	});
 
@@ -114,6 +116,7 @@ describe('buildObjectDefinition', () => {
 			enableIndexSearch: true,
 			enableLocalization: true,
 			enableObjectEntryDraft: true,
+			enableObjectEntrySchedule: true,
 			enableObjectEntryVersioning: true,
 			externalReferenceCode: 'structureERC',
 			label: {en_US: 'Structure'},
@@ -139,6 +142,7 @@ describe('buildObjectDefinition', () => {
 			status: {
 				code: 0,
 			},
+			titleObjectFieldName: 'title',
 		});
 	});
 
@@ -157,6 +161,7 @@ describe('buildObjectDefinition', () => {
 			enableIndexSearch: true,
 			enableLocalization: true,
 			enableObjectEntryDraft: true,
+			enableObjectEntrySchedule: true,
 			enableObjectEntryVersioning: true,
 			externalReferenceCode: 'structureERC',
 			label: {en_US: 'Structure'},
@@ -188,6 +193,7 @@ describe('buildObjectDefinition', () => {
 			status: {
 				code: 0,
 			},
+			titleObjectFieldName: 'title',
 		});
 	});
 });

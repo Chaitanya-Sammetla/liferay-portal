@@ -8,6 +8,7 @@ package com.liferay.headless.admin.site.resource.v1_0.test;
 import com.liferay.arquillian.extension.junit.bridge.junit.Arquillian;
 import com.liferay.headless.admin.site.client.dto.v1_0.ContainerPageElementDefinition;
 import com.liferay.headless.admin.site.client.dto.v1_0.ContentPageSpecification;
+import com.liferay.headless.admin.site.client.dto.v1_0.FavIcon;
 import com.liferay.headless.admin.site.client.dto.v1_0.PageElement;
 import com.liferay.headless.admin.site.client.dto.v1_0.PageElementDefinition;
 import com.liferay.headless.admin.site.client.dto.v1_0.PageExperience;
@@ -678,8 +679,8 @@ public class PageSpecificationResourceTest
 
 		_modifyPageExperiences(contentPageSpecification.getPageExperiences());
 
-		SettingsTestUtil.modifySettings(
-			serviceContext, contentPageSpecification.getSettings());
+		_modifySettings(
+			contentPageSpecification, serviceContext, layout.isTypeUtility());
 
 		contentPageSpecification.setStatus(PageSpecification.Status.DRAFT);
 
@@ -700,7 +701,9 @@ public class PageSpecificationResourceTest
 			PageSpecification.Type.WIDGET_PAGE_SPECIFICATION,
 			widgetPageSpecification.getType());
 
-		Assert.assertNull(widgetPageSpecification.getWidgetPageSections());
+		Assert.assertTrue(
+			ArrayUtil.isNotEmpty(
+				widgetPageSpecification.getWidgetPageSections()));
 	}
 
 	private ContentPageSpecification _getContentPageSpecification(
@@ -881,6 +884,34 @@ public class PageSpecificationResourceTest
 		}
 	}
 
+	private void _modifySettings(
+			PageSpecification pageSpecification, ServiceContext serviceContext,
+			boolean typeUtility)
+		throws Exception {
+
+		if (!typeUtility) {
+			SettingsTestUtil.modifySettings(
+				FavIcon.FavIconType.CLIENT_EXTENSION, serviceContext,
+				pageSpecification.getSettings());
+
+			return;
+		}
+
+		pageSpecification.setSettings(
+			() -> new Settings() {
+				{
+					setMasterPageItemExternalReference(
+						() ->
+							SettingsTestUtil.getMasterPageItemExternalReference(
+								serviceContext));
+					setStyleBookItemExternalReference(
+						() ->
+							SettingsTestUtil.getStyleBookItemExternalReference(
+								serviceContext));
+				}
+			});
+	}
+
 	private void _testDeleteSiteSiteByExternalReferenceCodePageSpecification(
 			Layout layout, ServiceContext serviceContext)
 		throws Exception {
@@ -1047,21 +1078,24 @@ public class PageSpecificationResourceTest
 			Layout layout, ServiceContext serviceContext)
 		throws Exception {
 
-		PageSpecification pageSpecification =
-			pageSpecificationResource.
-				getSiteSiteByExternalReferenceCodePageSpecification(
-					testGroup.getExternalReferenceCode(),
-					layout.getExternalReferenceCode());
+		WidgetPageSpecification widgetPageSpecification =
+			(WidgetPageSpecification)
+				pageSpecificationResource.
+					getSiteSiteByExternalReferenceCodePageSpecification(
+						testGroup.getExternalReferenceCode(),
+						layout.getExternalReferenceCode());
 
 		SettingsTestUtil.modifySettings(
-			serviceContext, pageSpecification.getSettings());
+			FavIcon.FavIconType.ITEM_EXTERNAL_REFERENCE, serviceContext,
+			widgetPageSpecification.getSettings());
 
 		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
-			pageSpecification,
+			widgetPageSpecification,
 			() -> PageSpecificationsTestUtil.getWidgetPageSpecification(
-				null, pageSpecification.getSettings(), null));
+				null, null, widgetPageSpecification.getSettings(), null,
+				widgetPageSpecification.getWidgetPageSections()));
 
-		pageSpecification.setStatus(PageSpecification.Status.DRAFT);
+		widgetPageSpecification.setStatus(PageSpecification.Status.DRAFT);
 
 		_assertProblemException(
 			"BAD_REQUEST",
@@ -1069,7 +1103,8 @@ public class PageSpecificationResourceTest
 				pageSpecificationResource.
 					patchSiteSiteByExternalReferenceCodePageSpecification(
 						testGroup.getExternalReferenceCode(),
-						layout.getExternalReferenceCode(), pageSpecification));
+						layout.getExternalReferenceCode(),
+						widgetPageSpecification));
 	}
 
 	private void _testPatchSiteSiteByExternalReferenceCodePageSpecification(
@@ -1135,8 +1170,8 @@ public class PageSpecificationResourceTest
 							}
 						}));
 
-		SettingsTestUtil.modifySettings(
-			serviceContext, contentPageSpecification.getSettings());
+		_modifySettings(
+			contentPageSpecification, serviceContext, layout.isTypeUtility());
 
 		_testPatchSiteSiteByExternalReferenceCodePageSpecification(
 			contentPageSpecification,
@@ -1168,8 +1203,8 @@ public class PageSpecificationResourceTest
 					testGroup.getExternalReferenceCode(),
 					pageSpecificationExternalReferenceCode);
 
-		SettingsTestUtil.modifySettings(
-			serviceContext, pageSpecification.getSettings());
+		_modifySettings(
+			pageSpecification, serviceContext, layout.isTypeUtility());
 
 		pageSpecification.setStatus(PageSpecification.Status.APPROVED);
 
