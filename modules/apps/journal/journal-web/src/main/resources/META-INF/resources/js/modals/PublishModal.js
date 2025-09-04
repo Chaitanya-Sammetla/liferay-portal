@@ -6,6 +6,7 @@
 import ClayAlert from '@clayui/alert';
 import ClayButton from '@clayui/button';
 import ClayModal, {useModal} from '@clayui/modal';
+import {sub} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import PermissionsOptions from '../PermissionsOptions';
@@ -15,6 +16,7 @@ export default function PublishModal({
 	actionButton,
 	articleId,
 	displayDate: defaultDisplayDate,
+	lastPublishedDate,
 	onCloseModal,
 	onPublishButtonClick,
 	permissionsURL,
@@ -35,6 +37,7 @@ export default function PublishModal({
 		actionButton,
 		articleId,
 		workflowEnabled,
+		lastPublishedDate,
 	});
 
 	const [displayDate, setDisplayDate] = useState(defaultDisplayDate);
@@ -131,7 +134,12 @@ export default function PublishModal({
 	);
 }
 
-function getLabels({actionButton, articleId, workflowEnabled}) {
+function getLabels({
+	actionButton,
+	articleId,
+	lastPublishedDate,
+	workflowEnabled,
+}) {
 	if (actionButton === 'publish') {
 		return {
 			button: workflowEnabled
@@ -158,10 +166,28 @@ function getLabels({actionButton, articleId, workflowEnabled}) {
 				? workflowEnabled
 					? Liferay.Language.get(
 							'set-the-date-and-time-for-publishing-the-web-content-and-submit-it-for-workflow'
-						)
+						) +
+						(lastPublishedDate
+							? ' ' +
+								sub(
+									Liferay.Language.get(
+										'last-publication-date'
+									),
+									lastPublishedDate
+								)
+							: '')
 					: Liferay.Language.get(
 							'set-the-date-and-time-for-publishing-the-web-content'
-						)
+						) +
+						(lastPublishedDate
+							? ' ' +
+								sub(
+									Liferay.Language.get(
+										'last-publication-date'
+									),
+									lastPublishedDate
+								)
+							: '')
 				: workflowEnabled
 					? Liferay.Language.get(
 							'set-the-publishing-date-and-time-for-the-web-content-confirm-the-visibility-and-submit-it-for-workflow'

@@ -21,6 +21,7 @@ export default function SaveButtons({
 	defaultLanguageId: initialDefaultLanguageId,
 	displayDate,
 	editingDefaultValues,
+	lastPublishedDate,
 	permissionsURL,
 	portletNamespace,
 	publishButtonLabel,
@@ -315,6 +316,7 @@ export default function SaveButtons({
 					actionButton={publishModalAction}
 					articleId={articleId}
 					displayDate={displayDate}
+					lastPublishedDate={lastPublishedDate}
 					onCloseModal={() =>
 						setPublishModalState({
 							publishModalAction: '',

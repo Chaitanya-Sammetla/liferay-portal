@@ -1139,6 +1139,20 @@ public class JournalEditArticleDisplayContext {
 			"editingDefaultValues",
 			getClassNameId() != JournalArticleConstants.CLASS_NAME_ID_DEFAULT
 		).put(
+			"lastPublishedDate",
+			() -> {
+				if (!(_article == null) && _article.isApproved()) {
+					Format format =
+						FastDateFormatFactoryUtil.getSimpleDateFormat(
+							"dd MMM yyyy HH:mm", _themeDisplay.getLocale(),
+							_themeDisplay.getTimeZone());
+
+					return format.format(_article.getDisplayDate());
+				}
+
+				return null;
+			}
+		).put(
 			"permissionsURL", getPermissionsURL()
 		).put(
 			"publishButtonLabel",
