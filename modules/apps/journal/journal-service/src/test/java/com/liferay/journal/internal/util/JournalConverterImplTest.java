@@ -23,6 +23,7 @@ import com.liferay.portal.xml.SAXReaderImpl;
 
 import java.io.Serializable;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -94,67 +95,91 @@ public class JournalConverterImplTest {
 		ReflectionTestUtil.setFieldValue(
 			journalConverterImpl, "_jsonFactory", new JSONFactoryImpl());
 
-		DDMFormField ddmFormField = _createDDMFormField(
-			"string", true, "field2", "select");
-
-		ddmFormField.setMultiple(true);
-
-		DDMFormFieldOptions ddmFormFieldOptions = new DDMFormFieldOptions();
-
-		String value = RandomTestUtil.randomString();
-
-		ddmFormFieldOptions.addOption(value);
-		ddmFormFieldOptions.addOptionLabel(
-			value, LocaleUtil.US, RandomTestUtil.randomString());
-
-		String optionReference = RandomTestUtil.randomString();
-
-		ddmFormFieldOptions.addOptionReference(value, optionReference);
-
-		ddmFormField.setDDMFormFieldOptions(ddmFormFieldOptions);
-
 		SAXReaderImpl saxReaderImpl = new SAXReaderImpl();
 
 		Document document = saxReaderImpl.createDocument();
 
 		Element rootElement = document.addElement("root");
 
-		ReflectionTestUtil.invoke(
-			journalConverterImpl, "_updateContentDynamicElement",
-			new Class<?>[] {
-				int.class, DDMFormField.class, Element.class, Field.class
-			},
-			0, ddmFormField, rootElement,
-			new Field(
-				RandomTestUtil.randomLong(), ddmFormField.getName(),
-				HashMapBuilder.<Locale, List<Serializable>>put(
-					LocaleUtil.US,
-					() -> ListUtil.fromArray(
-						JSONUtil.put(
-							value
-						).toString())
-				).build(),
-				LocaleUtil.US));
+		String[] fieldTypes = {"select", "select", "radio"};
+		boolean[] multipleFlags = {true, false};
+
+		List<String> optionReferences = new ArrayList<>();
+
+		for (int i = 0; i < fieldTypes.length; i++) {
+			String fieldType = fieldTypes[i];
+			String fieldName = "field_" + i;
+
+			DDMFormField ddmFormField = _createDDMFormField(
+				"string", true, fieldName, fieldType);
+
+			if (fieldType.equals("select")) {
+				ddmFormField.setMultiple(multipleFlags[i]);
+			}
+
+			DDMFormFieldOptions ddmFormFieldOptions = new DDMFormFieldOptions();
+
+			String value = RandomTestUtil.randomString();
+
+			String optionReference = RandomTestUtil.randomString();
+
+			optionReferences.add(optionReference);
+
+			ddmFormFieldOptions.addOption(value);
+			ddmFormFieldOptions.addOptionLabel(
+				value, LocaleUtil.US, RandomTestUtil.randomString());
+
+			ddmFormFieldOptions.addOptionReference(value, optionReference);
+
+			ddmFormField.setDDMFormFieldOptions(ddmFormFieldOptions);
+
+			Serializable fieldValue;
+
+			if (fieldType.equals("select")) {
+				fieldValue = JSONUtil.put(
+					value
+				).toString();
+			}
+			else {
+				fieldValue = value;
+			}
+
+			ReflectionTestUtil.invoke(
+				journalConverterImpl, "_updateContentDynamicElement",
+				new Class<?>[] {
+					int.class, DDMFormField.class, Element.class, Field.class
+				},
+				0, ddmFormField, rootElement,
+				new Field(
+					RandomTestUtil.randomLong(), ddmFormField.getName(),
+					HashMapBuilder.<Locale, List<Serializable>>put(
+						LocaleUtil.US, ListUtil.fromArray(fieldValue)
+					).build(),
+					LocaleUtil.US));
+		}
 
 		List<Element> dynamicContentElements = rootElement.elements(
 			"dynamic-content");
 
 		Assert.assertEquals(
-			dynamicContentElements.toString(), 1,
+			dynamicContentElements.toString(), 3,
 			dynamicContentElements.size());
 
-		Element dynamicContentElement = dynamicContentElements.get(0);
+		for (int i = 0; i < dynamicContentElements.size(); i++) {
+			Element dynamicContentElement = dynamicContentElements.get(i);
 
-		List<Element> optionReferenceElements = dynamicContentElement.elements(
-			"option-reference");
+			List<Element> optionReferenceElements =
+				dynamicContentElement.elements("option-reference");
 
-		Assert.assertEquals(
-			optionReferenceElements.toString(), 1,
-			optionReferenceElements.size());
+			Assert.assertEquals(
+				optionReferenceElements.toString() + fieldTypes[i], 1,
+				optionReferenceElements.size());
 
-		Element optionReferenceElement = optionReferenceElements.get(0);
+			Element optionReferenceElement = optionReferenceElements.get(0);
 
-		Assert.assertEquals(optionReference, optionReferenceElement.getText());
+			Assert.assertEquals(
+				optionReferences.get(i), optionReferenceElement.getText());
+		}
 	}
 
 }
