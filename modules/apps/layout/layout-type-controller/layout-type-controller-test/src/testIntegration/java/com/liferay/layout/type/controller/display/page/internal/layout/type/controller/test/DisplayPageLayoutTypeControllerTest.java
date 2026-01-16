@@ -44,13 +44,17 @@ import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutSet;
 import com.liferay.portal.kernel.model.LayoutTypeController;
 import com.liferay.portal.kernel.model.LayoutTypePortlet;
+import com.liferay.portal.kernel.model.ResourceConstants;
 import com.liferay.portal.kernel.model.User;
+import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.security.permission.ActionKeys;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactory;
 import com.liferay.portal.kernel.security.permission.PermissionCheckerFactoryUtil;
 import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
+import com.liferay.portal.kernel.service.ResourcePermissionLocalServiceUtil;
+import com.liferay.portal.kernel.service.RoleLocalServiceUtil;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.service.UserLocalService;
@@ -61,6 +65,7 @@ import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
 import com.liferay.portal.kernel.test.util.GroupTestUtil;
 import com.liferay.portal.kernel.test.util.RandomTestUtil;
+import com.liferay.portal.kernel.test.util.ResourcePermissionTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.test.util.UserTestUtil;
@@ -306,7 +311,7 @@ public class DisplayPageLayoutTypeControllerTest {
 
 		Assert.assertTrue(layout.isPublished());
 
-		_assertIncludeLayoutContent(false, layout.getPlid(), _guestUser);
+		_assertIncludeLayoutContent(false, layout.getPlid(),HttpServletResponse.SC_OK, _guestUser);
 	}
 
 	@Test
@@ -346,7 +351,7 @@ public class DisplayPageLayoutTypeControllerTest {
 
 			ServiceContextThreadLocal.pushServiceContext(serviceContext);
 
-			_assertIncludeLayoutContent(true, layout.getPlid(), _guestUser);
+			_assertIncludeLayoutContent(true, layout.getPlid(),HttpServletResponse.SC_OK, _guestUser);
 		}
 		finally {
 			ServiceContextThreadLocal.pushServiceContext(_serviceContext);
@@ -484,13 +489,15 @@ public class DisplayPageLayoutTypeControllerTest {
 		ContentLayoutTestUtil.publishLayout(draftLayout, layout);
 
 		Assert.assertTrue(layout.isPublished());
+		Group testGroup=GroupTestUtil.addGroupToCompany(_company.getCompanyId());
+		User user = UserTestUtil.addUser(testGroup.getGroupId());
 
 		_assertIncludeLayoutContent(
-			false, draftLayout.getPlid(), TestPropsValues.getUser());
+			false, draftLayout.getPlid(),HttpServletResponse.SC_FORBIDDEN,user );
 		_assertIncludeLayoutContent(
-			false, layout.getPlid(), TestPropsValues.getUser());
-		_assertIncludeLayoutContent(true, draftLayout.getPlid(), _guestUser);
-		_assertIncludeLayoutContent(true, layout.getPlid(), _guestUser);
+			false, layout.getPlid(),HttpServletResponse.SC_FORBIDDEN, user);
+		_assertIncludeLayoutContent(true, draftLayout.getPlid(), HttpServletResponse.SC_OK, _guestUser);
+		_assertIncludeLayoutContent(true, layout.getPlid(),HttpServletResponse.SC_OK, _guestUser);
 	}
 
 	private void _addFragmentEntryLink(Layout layout) throws Exception {
@@ -568,7 +575,7 @@ public class DisplayPageLayoutTypeControllerTest {
 	}
 
 	private void _assertIncludeLayoutContent(
-			boolean noSuchLayoutExceptionExpected, long plid, User user)
+			boolean noSuchLayoutExceptionExpected, long plid, int expectedStatus, User user)
 		throws Exception {
 
 		Layout layout = _layoutLocalService.getLayout(plid);
@@ -583,7 +590,7 @@ public class DisplayPageLayoutTypeControllerTest {
 
 			ServiceContext serviceContext =
 				ServiceContextTestUtil.getServiceContext(
-					_group.getGroupId(), user.getUserId());
+					user.getGroupId(), user.getUserId());
 
 			serviceContext.setRequest(mockHttpServletRequest);
 
@@ -598,7 +605,7 @@ public class DisplayPageLayoutTypeControllerTest {
 			Assert.assertFalse(noSuchLayoutExceptionExpected);
 
 			Assert.assertEquals(
-				HttpServletResponse.SC_OK, mockHttpServletResponse.getStatus());
+				expectedStatus, mockHttpServletResponse.getStatus());
 		}
 		catch (NoSuchLayoutException noSuchLayoutException) {
 			Assert.assertTrue(noSuchLayoutExceptionExpected);
