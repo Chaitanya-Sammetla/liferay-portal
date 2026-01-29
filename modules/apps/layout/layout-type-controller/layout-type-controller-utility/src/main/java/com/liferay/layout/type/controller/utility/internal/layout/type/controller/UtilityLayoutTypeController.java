@@ -16,6 +16,7 @@ import com.liferay.portal.kernel.exception.NoSuchLayoutException;
 import com.liferay.portal.kernel.exception.PortalException;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.login.AuthLoginGroupSettingsUtil;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.model.LayoutConstants;
 import com.liferay.portal.kernel.model.LayoutTypeController;
@@ -171,6 +172,29 @@ public class UtilityLayoutTypeController extends BaseLayoutTypeControllerImpl {
 			RequestDispatcher.INCLUDE_SERVLET_PATH);
 
 		try {
+			boolean hasViewPermission = _hasViewPermissions(
+				themeDisplay.getPermissionChecker(), layout);
+
+			if (!hasViewPermission && themeDisplay.isSignedIn()) {
+				httpServletResponse.setStatus(HttpServletResponse.SC_FORBIDDEN);
+			}
+			else if (!hasViewPermission) {
+				if (themeDisplay.isSignedIn()) {
+					httpServletResponse.setStatus(
+						HttpServletResponse.SC_FORBIDDEN);
+				}
+				else if (AuthLoginGroupSettingsUtil.isPromptEnabled(
+							layout.getGroupId())) {
+
+					redirect = HttpComponentsUtil.setParameter(
+						themeDisplay.getURLSignIn(), "redirect",
+						themeDisplay.getURLCurrent());
+				}
+				else {
+					throw new NoSuchLayoutException();
+				}
+			}
+
 			if (Validator.isNotNull(redirect)) {
 				httpServletResponse.sendRedirect(redirect);
 			}
@@ -290,6 +314,27 @@ public class UtilityLayoutTypeController extends BaseLayoutTypeControllerImpl {
 					permissionChecker, layout) ||
 				_modelResourcePermission.contains(
 					permissionChecker, layout.getPlid(), ActionKeys.UPDATE)) {
+
+				return true;
+			}
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return false;
+	}
+
+	private boolean _hasViewPermissions(
+		PermissionChecker permissionChecker, Layout layout) {
+
+		try {
+			if (_layoutPermission.containsLayoutUpdatePermission(
+					permissionChecker, layout) ||
+				_modelResourcePermission.contains(
+					permissionChecker, layout.getLayoutId(), ActionKeys.VIEW)) {
 
 				return true;
 			}
