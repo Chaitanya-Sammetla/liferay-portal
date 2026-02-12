@@ -267,7 +267,7 @@ public class ObjectEntryInfoItemFieldValuesProviderTest {
 			false);
 
 		_testObjectEntryInfoItemFieldValuesProvider(
-			expectedConvertedDate, fileEntry, objectAction, objectEntry,
+			utcDateTime, fileEntry, objectAction, objectEntry,
 			parentTextObjectFieldNameValue, null);
 
 		ThemeDisplay themeDisplay = new ThemeDisplay();

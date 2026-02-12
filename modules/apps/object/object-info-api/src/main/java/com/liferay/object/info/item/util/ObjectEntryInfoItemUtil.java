@@ -126,8 +126,6 @@ public class ObjectEntryInfoItemUtil {
 		ThemeDisplay themeDisplay = serviceContext.getThemeDisplay();
 
 		if (themeDisplay != null) {
-			themeDisplay.setUser(serviceContext.fetchUser());
-
 			return themeDisplay;
 		}
 
@@ -139,7 +137,7 @@ public class ObjectEntryInfoItemUtil {
 				setLocale(
 					LocaleUtil.fromLanguageId(serviceContext.getLanguageId()));
 				setSiteGroupId(serviceContext.getScopeGroupId());
-				setUser(serviceContext.fetchUser());
+				setUser(getUser());
 			}
 		};
 	}

@@ -24,6 +24,7 @@ import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
 import com.liferay.object.constants.ObjectFieldSettingConstants;
 import com.liferay.object.constants.ObjectRelationshipConstants;
+import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.info.field.converter.ObjectFieldInfoFieldConverter;
 import com.liferay.object.info.field.type.util.ObjectFieldInfoFieldTypeUtil;
@@ -67,6 +68,7 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -642,15 +644,20 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 		else if (objectField.compareBusinessType(
 					ObjectFieldConstants.BUSINESS_TYPE_DATE_TIME)) {
 
-			String valueString = value.toString();
+			String valueString = String.valueOf(value);
+
+			LocalDateTime localDateTime = LocalDateTime.parse(
+				valueString,
+				DateTimeFormatter.ofPattern(
+					ObjectFieldUtil.getDateTimePattern(valueString)));
 
 			List<ObjectFieldSetting> objectFieldSettings =
 				ObjectFieldSettingLocalServiceUtil.
 					getObjectFieldObjectFieldSettings(
 						objectField.getObjectFieldId());
 
-			if ((valueString == null) || (objectFieldSettings == null)) {
-				return null;
+			if (objectFieldSettings.isEmpty()) {
+				return localDateTime;
 			}
 
 			for (ObjectFieldSetting objectFieldSetting : objectFieldSettings) {
@@ -659,29 +666,24 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 					ObjectFieldSettingConstants.VALUE_USE_INPUT_AS_ENTERED.
 						equals(objectFieldSetting.getValue())) {
 
-					return LocalDateTime.parse(
-						value.toString(),
-						DateTimeFormatter.ofPattern(
-							ObjectFieldUtil.getDateTimePattern(
-								value.toString())));
+					return localDateTime;
 				}
-
-				LocalDateTime localDateTime = LocalDateTime.parse(
-					valueString,
-					DateTimeFormatter.ofPattern(
-						ObjectFieldUtil.getDateTimePattern(valueString)));
-
-				ZonedDateTime utcZonedDateTime = localDateTime.atZone(
-					ZoneOffset.UTC);
-
-				ZonedDateTime userZonedDateTime =
-					utcZonedDateTime.withZoneSameInstant(
-						themeDisplay.getUser(
-						).getTimeZone(
-						).toZoneId());
-
-				return userZonedDateTime.toLocalDateTime();
 			}
+
+			ZonedDateTime utcZonedDateTime = localDateTime.atZone(
+				ZoneOffset.UTC);
+
+			String zoneId = ObjectFieldSettingUtil.getTimeZoneId(
+				objectFieldSettings, themeDisplay.getUser());
+
+			if (zoneId == null) {
+				return utcZonedDateTime.toLocalDateTime();
+			}
+
+			ZonedDateTime userZonedDateTime =
+				utcZonedDateTime.withZoneSameInstant(ZoneId.of(zoneId));
+
+			return userZonedDateTime.toLocalDateTime();
 		}
 		else if (objectField.compareBusinessType(
 					ObjectFieldConstants.BUSINESS_TYPE_MULTISELECT_PICKLIST)) {
