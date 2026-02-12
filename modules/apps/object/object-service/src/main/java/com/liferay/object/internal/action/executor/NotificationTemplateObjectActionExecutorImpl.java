@@ -5,6 +5,7 @@
 
 package com.liferay.object.internal.action.executor;
 
+import com.liferay.dynamic.data.mapping.expression.DDMExpressionFactory;
 import com.liferay.notification.context.NotificationContextBuilder;
 import com.liferay.notification.model.NotificationTemplate;
 import com.liferay.notification.service.NotificationTemplateLocalService;
@@ -25,6 +26,7 @@ import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.vulcan.dto.converter.DTOConverterRegistry;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import org.osgi.service.component.annotations.Component;
@@ -53,24 +55,44 @@ public class NotificationTemplateObjectActionExecutorImpl
 			_notificationTypeServiceTracker.getNotificationType(
 				notificationTemplate.getType());
 
-		ObjectDefinition objectDefinition =
+		ObjectDefinition sourceObjectDefinition =
 			_objectDefinitionLocalService.fetchObjectDefinition(
 				payloadJSONObject.getLong("objectDefinitionId"));
 
 		Map<String, Object> termValues = _getTermValues(
-			objectDefinition,
+			payloadJSONObject.getString("preferredLanguageId"),
+			sourceObjectDefinition,
 			ObjectEntryVariablesUtil.getVariables(
-				_dtoConverterRegistry, objectDefinition, payloadJSONObject,
-				_systemObjectDefinitionManagerRegistry));
+				_dtoConverterRegistry, sourceObjectDefinition,
+				payloadJSONObject, _systemObjectDefinitionManagerRegistry));
+
+		ObjectDefinition targetObjectDefinition =
+			_objectDefinitionLocalService.
+				fetchObjectDefinitionByExternalReferenceCode(
+					GetterUtil.getString(
+						parametersUnicodeProperties.get(
+							"objectDefinitionExternalReferenceCode")),
+					sourceObjectDefinition.getCompanyId());
+
+		Map<String, Object> targetValues = new HashMap<>();
+
+		if (targetObjectDefinition != null) {
+			targetValues = ObjectEntryVariablesUtil.getValues(
+				_ddmExpressionFactory, targetObjectDefinition,
+				parametersUnicodeProperties,
+				ObjectEntryVariablesUtil.getVariables(
+					_dtoConverterRegistry, targetObjectDefinition,
+					payloadJSONObject, _systemObjectDefinitionManagerRegistry));
+		}
 
 		notificationType.sendNotification(
 			new NotificationContextBuilder(
 			).className(
-				objectDefinition.getClassName()
+				sourceObjectDefinition.getClassName()
 			).classPK(
 				GetterUtil.getLong(termValues.get("id"))
 			).companyId(
-				objectDefinition.getCompanyId()
+				sourceObjectDefinition.getCompanyId()
 			).externalReferenceCode(
 				GetterUtil.getString(termValues.get("externalReferenceCode"))
 			).groupId(
@@ -81,9 +103,11 @@ public class NotificationTemplateObjectActionExecutorImpl
 				termValues
 			).userId(
 				userId
+			).parentClassPK(
+				GetterUtil.getLong(targetValues.get("parentClassPK"))
 			).portletId(
-				objectDefinition.isUnmodifiableSystemObject() ?
-					StringPool.BLANK : objectDefinition.getPortletId()
+				sourceObjectDefinition.isUnmodifiableSystemObject() ?
+					StringPool.BLANK : sourceObjectDefinition.getPortletId()
 			).preferredLanguageId(
 				payloadJSONObject.getString("preferredLanguageId")
 			).usePreferredLanguageForGuests(
@@ -99,7 +123,8 @@ public class NotificationTemplateObjectActionExecutorImpl
 	}
 
 	private Map<String, Object> _getTermValues(
-		ObjectDefinition objectDefinition, Map<String, Object> variables) {
+		String languageId, ObjectDefinition objectDefinition,
+		Map<String, Object> variables) {
 
 		Map<String, Object> termValues = (Map<String, Object>)variables.get(
 			"baseModel");
@@ -118,11 +143,15 @@ public class NotificationTemplateObjectActionExecutorImpl
 			termValues.put(
 				objectField.getName(),
 				ObjectDefinitionNotificationTermEvaluatorUtil.getTermValue(
-					objectField, termValues.get(objectField.getName())));
+					languageId, objectField,
+					termValues.get(objectField.getName())));
 		}
 
 		return termValues;
 	}
+
+	@Reference
+	private DDMExpressionFactory _ddmExpressionFactory;
 
 	@Reference
 	private DTOConverterRegistry _dtoConverterRegistry;

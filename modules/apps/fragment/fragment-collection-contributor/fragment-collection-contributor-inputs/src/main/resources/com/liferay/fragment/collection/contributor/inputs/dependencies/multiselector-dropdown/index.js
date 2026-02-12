@@ -237,8 +237,10 @@ async function main() {
 			.then((response) => response.json())
 			.then((result) => {
 				return result.items.map((entry) => {
+					const finalEntry = entry.embedded || entry;
+
 					let label =
-						entry[input.attributes.relationshipLabelFieldName];
+						finalEntry[input.attributes.relationshipLabelFieldName];
 
 					if (Array.isArray(label)) {
 						label = label.map((label) => label.name).join(', ');
@@ -250,7 +252,9 @@ async function main() {
 					return {
 						label,
 						value: String(
-							entry[input.attributes.relationshipValueFieldName]
+							finalEntry[
+								input.attributes.relationshipValueFieldName
+							]
 						),
 					};
 				});
@@ -376,11 +380,13 @@ async function main() {
 	function renderLabels() {
 		labelContainer.innerHTML = '';
 
-		if (selection.size) {
-			inputElement.removeAttribute('required');
-		}
-		else {
-			inputElement.setAttribute('required', '');
+		if (input.required) {
+			if (selection.size) {
+				inputElement.removeAttribute('required');
+			}
+			else {
+				inputElement.setAttribute('required', '');
+			}
 		}
 
 		if (!options.length) {

@@ -7,13 +7,8 @@ package com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.
 
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchClientResolver;
-import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryTranslatorFixture;
-import com.liferay.portal.search.elasticsearch8.internal.query.ElasticsearchQueryTranslator;
 import com.liferay.portal.search.engine.adapter.document.DocumentRequestExecutor;
 import com.liferay.portal.search.internal.document.DocumentBuilderFactoryImpl;
-import com.liferay.portal.search.internal.geolocation.GeoBuildersImpl;
-import com.liferay.portal.search.internal.script.ScriptsImpl;
-import com.liferay.portal.search.script.Scripts;
 
 /**
  * @author Dylan Rebelak
@@ -36,17 +31,11 @@ public class DocumentRequestExecutorFixture {
 	}
 
 	private BulkDocumentRequestExecutor _createBulkDocumentRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver,
-		ElasticsearchBulkableDocumentRequestTranslator
-			elasticsearchBulkableDocumentRequestTranslator) {
+		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		BulkDocumentRequestExecutor bulkDocumentRequestExecutor =
 			new BulkDocumentRequestExecutorImpl();
 
-		ReflectionTestUtil.setFieldValue(
-			bulkDocumentRequestExecutor,
-			"_elasticsearchBulkableDocumentRequestTranslator",
-			elasticsearchBulkableDocumentRequestTranslator);
 		ReflectionTestUtil.setFieldValue(
 			bulkDocumentRequestExecutor, "_elasticsearchClientResolver",
 			elasticsearchClientResolver);
@@ -62,36 +51,19 @@ public class DocumentRequestExecutorFixture {
 			deleteByQueryDocumentRequestExecutor =
 				new DeleteByQueryDocumentRequestExecutorImpl();
 
-		ElasticsearchQueryTranslatorFixture
-			legacyElasticsearchQueryTranslatorFixture =
-				new ElasticsearchQueryTranslatorFixture();
-
 		ReflectionTestUtil.setFieldValue(
 			deleteByQueryDocumentRequestExecutor,
 			"_elasticsearchClientResolver", elasticsearchClientResolver);
-		ReflectionTestUtil.setFieldValue(
-			deleteByQueryDocumentRequestExecutor, "_legacyQueryTranslator",
-			legacyElasticsearchQueryTranslatorFixture.
-				getElasticsearchQueryTranslator());
-		ReflectionTestUtil.setFieldValue(
-			deleteByQueryDocumentRequestExecutor, "_queryTranslator",
-			new ElasticsearchQueryTranslator());
 
 		return deleteByQueryDocumentRequestExecutor;
 	}
 
 	private DeleteDocumentRequestExecutor _createDeleteDocumentRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver,
-		ElasticsearchBulkableDocumentRequestTranslator
-			elasticsearchBulkableDocumentRequestTranslator) {
+		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		DeleteDocumentRequestExecutor deleteDocumentRequestExecutor =
 			new DeleteDocumentRequestExecutorImpl();
 
-		ReflectionTestUtil.setFieldValue(
-			deleteDocumentRequestExecutor,
-			"_elasticsearchBulkableDocumentRequestTranslator",
-			elasticsearchBulkableDocumentRequestTranslator);
 		ReflectionTestUtil.setFieldValue(
 			deleteDocumentRequestExecutor, "_elasticsearchClientResolver",
 			elasticsearchClientResolver);
@@ -105,15 +77,9 @@ public class DocumentRequestExecutorFixture {
 		DocumentRequestExecutor documentRequestExecutor =
 			new ElasticsearchDocumentRequestExecutor();
 
-		ElasticsearchBulkableDocumentRequestTranslator
-			elasticsearchBulkableDocumentRequestTranslator =
-				new ElasticsearchBulkableDocumentRequestTranslatorImpl();
-
 		ReflectionTestUtil.setFieldValue(
 			documentRequestExecutor, "_bulkDocumentRequestExecutor",
-			_createBulkDocumentRequestExecutor(
-				elasticsearchClientResolver,
-				elasticsearchBulkableDocumentRequestTranslator));
+			_createBulkDocumentRequestExecutor(elasticsearchClientResolver));
 
 		ReflectionTestUtil.setFieldValue(
 			documentRequestExecutor, "_deleteByQueryDocumentRequestExecutor",
@@ -121,68 +87,46 @@ public class DocumentRequestExecutorFixture {
 				elasticsearchClientResolver));
 		ReflectionTestUtil.setFieldValue(
 			documentRequestExecutor, "_deleteDocumentRequestExecutor",
-			_createDeleteDocumentRequestExecutor(
-				elasticsearchClientResolver,
-				elasticsearchBulkableDocumentRequestTranslator));
+			_createDeleteDocumentRequestExecutor(elasticsearchClientResolver));
 		ReflectionTestUtil.setFieldValue(
 			documentRequestExecutor, "_getDocumentRequestExecutor",
-			_createGetDocumentRequestExecutor(
-				elasticsearchClientResolver,
-				elasticsearchBulkableDocumentRequestTranslator));
+			_createGetDocumentRequestExecutor(elasticsearchClientResolver));
 		ReflectionTestUtil.setFieldValue(
 			documentRequestExecutor, "_indexDocumentRequestExecutor",
-			_createIndexDocumentRequestExecutor(
-				elasticsearchClientResolver,
-				elasticsearchBulkableDocumentRequestTranslator));
+			_createIndexDocumentRequestExecutor(elasticsearchClientResolver));
 		ReflectionTestUtil.setFieldValue(
 			documentRequestExecutor, "_updateByQueryDocumentRequestExecutor",
 			_createUpdateByQueryDocumentRequestExecutor(
 				elasticsearchClientResolver));
 		ReflectionTestUtil.setFieldValue(
 			documentRequestExecutor, "_updateDocumentRequestExecutor",
-			_createUpdateDocumentRequestExecutor(
-				elasticsearchClientResolver,
-				elasticsearchBulkableDocumentRequestTranslator));
+			_createUpdateDocumentRequestExecutor(elasticsearchClientResolver));
 
 		return documentRequestExecutor;
 	}
 
 	private GetDocumentRequestExecutor _createGetDocumentRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver,
-		ElasticsearchBulkableDocumentRequestTranslator
-			elasticsearchBulkableDocumentRequestTranslator) {
+		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		GetDocumentRequestExecutor getDocumentRequestExecutor =
 			new GetDocumentRequestExecutorImpl();
 
-		ReflectionTestUtil.setFieldValue(
-			getDocumentRequestExecutor,
-			"_elasticsearchBulkableDocumentRequestTranslator",
-			elasticsearchBulkableDocumentRequestTranslator);
 		ReflectionTestUtil.setFieldValue(
 			getDocumentRequestExecutor, "_elasticsearchClientResolver",
 			elasticsearchClientResolver);
 		ReflectionTestUtil.setFieldValue(
 			getDocumentRequestExecutor, "_documentBuilderFactory",
 			new DocumentBuilderFactoryImpl());
-		ReflectionTestUtil.setFieldValue(
-			getDocumentRequestExecutor, "_geoBuilders", new GeoBuildersImpl());
 
 		return getDocumentRequestExecutor;
 	}
 
 	private IndexDocumentRequestExecutor _createIndexDocumentRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver,
-		ElasticsearchBulkableDocumentRequestTranslator
-			elasticsearchBulkableDocumentRequestTranslator) {
+		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		IndexDocumentRequestExecutor indexDocumentRequestExecutor =
 			new IndexDocumentRequestExecutorImpl();
 
-		ReflectionTestUtil.setFieldValue(
-			indexDocumentRequestExecutor,
-			"_elasticsearchBulkableDocumentRequestTranslator",
-			elasticsearchBulkableDocumentRequestTranslator);
 		ReflectionTestUtil.setFieldValue(
 			indexDocumentRequestExecutor, "_elasticsearchClientResolver",
 			elasticsearchClientResolver);
@@ -198,46 +142,25 @@ public class DocumentRequestExecutorFixture {
 			updateByQueryDocumentRequestExecutor =
 				new UpdateByQueryDocumentRequestExecutorImpl();
 
-		ElasticsearchQueryTranslatorFixture
-			lecacyElasticsearchQueryTranslatorFixture =
-				new ElasticsearchQueryTranslatorFixture();
-
 		ReflectionTestUtil.setFieldValue(
 			updateByQueryDocumentRequestExecutor,
 			"_elasticsearchClientResolver", elasticsearchClientResolver);
-		ReflectionTestUtil.setFieldValue(
-			updateByQueryDocumentRequestExecutor, "_legacyQueryTranslator",
-			lecacyElasticsearchQueryTranslatorFixture.
-				getElasticsearchQueryTranslator());
-		ReflectionTestUtil.setFieldValue(
-			updateByQueryDocumentRequestExecutor, "_queryTranslator",
-			new ElasticsearchQueryTranslator());
-		ReflectionTestUtil.setFieldValue(
-			updateByQueryDocumentRequestExecutor, "_scripts", _scripts);
 
 		return updateByQueryDocumentRequestExecutor;
 	}
 
 	private UpdateDocumentRequestExecutor _createUpdateDocumentRequestExecutor(
-		ElasticsearchClientResolver elasticsearchClientResolver,
-		ElasticsearchBulkableDocumentRequestTranslator
-			elasticsearchBulkableDocumentRequestTranslator) {
+		ElasticsearchClientResolver elasticsearchClientResolver) {
 
 		UpdateDocumentRequestExecutor updateDocumentRequestExecutor =
 			new UpdateDocumentRequestExecutorImpl();
 
-		ReflectionTestUtil.setFieldValue(
-			updateDocumentRequestExecutor,
-			"_elasticsearchBulkableDocumentRequestTranslator",
-			elasticsearchBulkableDocumentRequestTranslator);
 		ReflectionTestUtil.setFieldValue(
 			updateDocumentRequestExecutor, "_elasticsearchClientResolver",
 			elasticsearchClientResolver);
 
 		return updateDocumentRequestExecutor;
 	}
-
-	private static final Scripts _scripts = new ScriptsImpl();
 
 	private DocumentRequestExecutor _documentRequestExecutor;
 	private ElasticsearchClientResolver _elasticsearchClientResolver;

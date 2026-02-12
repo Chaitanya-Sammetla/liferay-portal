@@ -131,6 +131,7 @@ import com.liferay.portal.kernel.json.JSONUtil;
 import com.liferay.portal.kernel.language.Language;
 import com.liferay.portal.kernel.model.Company;
 import com.liferay.portal.kernel.model.ResourceConstants;
+import com.liferay.portal.kernel.model.Role;
 import com.liferay.portal.kernel.model.role.RoleConstants;
 import com.liferay.portal.kernel.notifications.UserNotificationDefinition;
 import com.liferay.portal.kernel.notifications.UserNotificationHandler;
@@ -356,6 +357,7 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 					objectDefinition, _objectDefinitionLocalService,
 					objectFieldInfoFieldConverter, _objectEntryLocalService,
 					_objectEntryManagerRegistry, _objectFieldLocalService,
+					_objectRelatedModelsProviderRegistry,
 					_objectRelationshipLocalService,
 					_objectScopeProviderRegistry, _portal,
 					_templateInfoItemFieldSetProvider, _userLocalService),
@@ -978,15 +980,14 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 					objectDefinition.getPortletId(),
 					TempFileEntryUtil.getTempFileName(fileName), file,
 					_mimeTypes.getContentType(file, fileName));
+				Role role = _roleLocalService.getRole(
+					themeDisplay.getCompanyId(), RoleConstants.GUEST);
 
 				_resourcePermissionLocalService.removeResourcePermission(
 					themeDisplay.getCompanyId(), DLFileEntry.class.getName(),
 					ResourceConstants.SCOPE_INDIVIDUAL,
 					String.valueOf(tempFileEntry.getFileEntryId()),
-					_roleLocalService.getRole(
-						themeDisplay.getCompanyId(), RoleConstants.GUEST
-					).getRoleId(),
-					ActionKeys.DOWNLOAD);
+					role.getRoleId(), ActionKeys.DOWNLOAD);
 
 				return tempFileEntry;
 			}
@@ -1001,18 +1002,16 @@ public class ObjectDefinitionDeployerImpl implements ObjectDefinitionDeployer {
 				ObjectDefinition objectDefinition, ThemeDisplay themeDisplay)
 			throws PortalException {
 
-			long groupId = themeDisplay.getScopeGroupId();
-
-			if (Objects.equals(
+			if (!Objects.equals(
 					ObjectDefinitionConstants.SCOPE_COMPANY,
 					objectDefinition.getScope())) {
 
-				Company company = themeDisplay.getCompany();
-
-				groupId = company.getGroupId();
+				return themeDisplay.getScopeGroupId();
 			}
 
-			return groupId;
+			Company company = themeDisplay.getCompany();
+
+			return company.getGroupId();
 		}
 
 	}

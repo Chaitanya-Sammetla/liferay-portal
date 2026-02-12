@@ -10,11 +10,10 @@ import co.elastic.clients.elasticsearch._types.query_dsl.QueryVariant;
 import com.liferay.petra.lang.CentralizedThreadLocal;
 import com.liferay.portal.kernel.search.Query;
 import com.liferay.portal.kernel.search.SearchContext;
-import com.liferay.portal.kernel.search.query.QueryTranslator;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.PropsKeys;
 import com.liferay.portal.kernel.util.PropsUtil;
-import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryTranslator;
+import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryVisitor;
 import com.liferay.portal.search.engine.adapter.SearchEngineAdapter;
 import com.liferay.portal.search.engine.adapter.ccr.CCRRequest;
 import com.liferay.portal.search.engine.adapter.ccr.CCRRequestExecutor;
@@ -36,11 +35,9 @@ import com.liferay.portal.search.engine.adapter.search.SearchResponse;
 import com.liferay.portal.search.engine.adapter.snapshot.SnapshotRequest;
 import com.liferay.portal.search.engine.adapter.snapshot.SnapshotRequestExecutor;
 import com.liferay.portal.search.engine.adapter.snapshot.SnapshotResponse;
-import com.liferay.portal.search.index.IndexNameBuilder;
 
 import java.util.List;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -203,18 +200,14 @@ public class ElasticsearchSearchEngineAdapterImpl
 	@Override
 	public String getQueryString(Query query) {
 		try {
-			QueryVariant queryVariant = _queryTranslator.translate(query, null);
+			QueryVariant queryVariant =
+				ElasticsearchQueryVisitor.INSTANCE.translate(query);
 
 			return queryVariant.toString();
 		}
 		catch (RuntimeException runtimeException) {
 			throw _getRuntimeException(runtimeException);
 		}
-	}
-
-	@Activate
-	protected void activate() {
-		_queryTranslator = new ElasticsearchQueryTranslator(_indexNameBuilder);
 	}
 
 	protected void setThrowOriginalExceptions(boolean throwOriginalExceptions) {
@@ -265,13 +258,8 @@ public class ElasticsearchSearchEngineAdapterImpl
 	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private DocumentRequestExecutor _documentRequestExecutor;
 
-	@Reference
-	private IndexNameBuilder _indexNameBuilder;
-
 	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private IndexRequestExecutor _indexRequestExecutor;
-
-	private QueryTranslator<QueryVariant> _queryTranslator;
 
 	@Reference(target = "(search.engine.impl=Elasticsearch)")
 	private SearchRequestExecutor _searchRequestExecutor;

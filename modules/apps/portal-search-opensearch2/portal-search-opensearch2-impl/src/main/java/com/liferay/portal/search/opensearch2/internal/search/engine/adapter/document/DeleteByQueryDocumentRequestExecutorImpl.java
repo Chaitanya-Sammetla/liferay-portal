@@ -8,20 +8,16 @@ package com.liferay.portal.search.opensearch2.internal.search.engine.adapter.doc
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.search.engine.adapter.document.DeleteByQueryDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.DeleteByQueryDocumentResponse;
-import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.opensearch2.internal.connection.OpenSearchConnectionManager;
-import com.liferay.portal.search.opensearch2.internal.legacy.query.OpenSearchQueryTranslator;
-import com.liferay.portal.search.query.QueryTranslator;
+import com.liferay.portal.search.opensearch2.internal.legacy.query.OpenSearchQueryVisitor;
 
 import java.io.IOException;
 
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
 import org.opensearch.client.opensearch.core.DeleteByQueryRequest;
 import org.opensearch.client.opensearch.core.DeleteByQueryResponse;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -45,12 +41,6 @@ public class DeleteByQueryDocumentRequestExecutorImpl
 			deleteByQueryResponse.total(), deleteByQueryResponse.took());
 	}
 
-	@Activate
-	protected void activate() {
-		_legacyQueryTranslator = new OpenSearchQueryTranslator(
-			_indexNameBuilder);
-	}
-
 	protected DeleteByQueryRequest createDeleteByQueryRequest(
 		DeleteByQueryDocumentRequest deleteByQueryDocumentRequest) {
 
@@ -63,14 +53,16 @@ public class DeleteByQueryDocumentRequestExecutorImpl
 		if (deleteByQueryDocumentRequest.getPortalSearchQuery() != null) {
 			builder.query(
 				new Query(
-					_queryTranslator.translate(
-						deleteByQueryDocumentRequest.getPortalSearchQuery())));
+					com.liferay.portal.search.opensearch2.internal.query.
+						OpenSearchQueryVisitor.INSTANCE.translate(
+							deleteByQueryDocumentRequest.
+								getPortalSearchQuery())));
 		}
 		else {
 			builder.query(
 				new Query(
-					_legacyQueryTranslator.translate(
-						deleteByQueryDocumentRequest.getQuery(), null)));
+					OpenSearchQueryVisitor.INSTANCE.translate(
+						deleteByQueryDocumentRequest.getQuery())));
 		}
 
 		builder.refresh(deleteByQueryDocumentRequest.isRefresh());
@@ -96,16 +88,6 @@ public class DeleteByQueryDocumentRequestExecutorImpl
 	}
 
 	@Reference
-	private IndexNameBuilder _indexNameBuilder;
-
-	private com.liferay.portal.kernel.search.query.QueryTranslator<QueryVariant>
-		_legacyQueryTranslator;
-
-	@Reference
 	private OpenSearchConnectionManager _openSearchConnectionManager;
-
-	private final QueryTranslator<QueryVariant> _queryTranslator =
-		new com.liferay.portal.search.opensearch2.internal.query.
-			OpenSearchQueryTranslator();
 
 }

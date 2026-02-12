@@ -378,6 +378,8 @@ public abstract class BaseWorkspaceGitRepository
 			return;
 		}
 
+		System.out.println(toString());
+
 		if (!_snapshot) {
 			_prepareGitWorkingDirectory();
 		}
@@ -1026,11 +1028,11 @@ public abstract class BaseWorkspaceGitRepository
 				return true;
 			}
 
-			if ((jobName.contains("master") &&
-				 !JenkinsResultsParserUtil.isNullOrEmpty(jobVariant) &&
-				 jobVariant.contains("modules-unit")) ||
-				jobVariant.contains("rest-builder") ||
-				jobVariant.contains("service-builder")) {
+			if (jobName.contains("master") &&
+				!JenkinsResultsParserUtil.isNullOrEmpty(jobVariant) &&
+				(jobVariant.contains("modules-unit") ||
+				 jobVariant.contains("rest-builder") ||
+				 jobVariant.contains("service-builder"))) {
 
 				return true;
 			}
@@ -1143,7 +1145,9 @@ public abstract class BaseWorkspaceGitRepository
 			}
 		}
 
-		_setSnapshot(true);
+		if (!jobName.contains("root-cause-analysis-tool")) {
+			_setSnapshot(true);
+		}
 
 		BuildDatabase buildDatabase = BuildDatabaseUtil.getBuildDatabase();
 
@@ -1151,8 +1155,6 @@ public abstract class BaseWorkspaceGitRepository
 	}
 
 	private void _prepareGitWorkingDirectory() {
-		System.out.println(toString());
-
 		File dotGitFolder = new File(getDirectory(), ".git");
 
 		if (JenkinsResultsParserUtil.isCloudCINode() &&

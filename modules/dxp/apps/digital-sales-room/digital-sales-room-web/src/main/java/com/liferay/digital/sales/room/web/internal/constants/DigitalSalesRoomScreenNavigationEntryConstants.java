@@ -10,11 +10,27 @@ package com.liferay.digital.sales.room.web.internal.constants;
  */
 public class DigitalSalesRoomScreenNavigationEntryConstants {
 
-	public static final String CATEGORY_KEY_ROOM = "room";
+	public static final String CATEGORY_KEY_GENERAL = "general";
 
-	public static final String CATEGORY_KEY_TEMPLATE = "template";
+	public static final String CATEGORY_KEY_LOOK_AND_FEEL = "look-and-feel";
+
+	public static final String CATEGORY_KEY_ROOMS = "rooms";
+
+	public static final String CATEGORY_KEY_SETTINGS = "settings";
+
+	public static final String CATEGORY_KEY_TEMPLATES = "templates";
+
+	public static final String CATEGORY_KEY_USERS = "users";
 
 	public static final String SCREEN_NAVIGATION_KEY_DIGITAL_SALES_ROOM =
 		"view.digital.sales.room";
+
+	public static final String
+		SCREEN_NAVIGATION_KEY_DIGITAL_SALES_ROOM_ROOM_SETTINGS =
+			"edit.digital.sales.room.room.settings";
+
+	public static final String
+		SCREEN_NAVIGATION_KEY_DIGITAL_SALES_ROOM_TEMPLATE_SETTINGS =
+			"edit.digital.sales.room.template.settings";
 
 }

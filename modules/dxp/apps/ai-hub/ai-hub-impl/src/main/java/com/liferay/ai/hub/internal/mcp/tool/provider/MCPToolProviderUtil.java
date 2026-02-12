@@ -14,6 +14,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.model.Group;
+import com.liferay.portal.kernel.model.GroupConstants;
 import com.liferay.portal.kernel.service.GroupLocalServiceUtil;
 import com.liferay.portal.kernel.service.UserServiceUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -90,7 +91,7 @@ public class MCPToolProviderUtil {
 		String url = GetterUtil.getString(properties.get("url"));
 
 		Map<String, String> customHeaders = _createCustomHeaders(
-			GetterUtil.getString(properties.get("authenticationArguments")));
+			GetterUtil.getString(properties.get("authArguments")));
 
 		if (url.endsWith("/sse")) {
 			return new HttpMcpTransport.Builder(
@@ -132,14 +133,20 @@ public class MCPToolProviderUtil {
 		ObjectEntryManager objectEntryManager, long userId) {
 
 		try {
+			String groupKey = GroupConstants.GUEST;
+
 			Group group = GroupLocalServiceUtil.fetchGroup(groupId);
+
+			if (group != null) {
+				groupKey = group.getGroupKey();
+			}
 
 			Page<ObjectEntry> page = objectEntryManager.getObjectEntries(
 				companyId,
 				ObjectDefinitionLocalServiceUtil.
 					fetchObjectDefinitionByExternalReferenceCode(
 						"L_MCP_SERVER", companyId),
-				group.getGroupKey(), null,
+				groupKey, null,
 				new DefaultDTOConverterContext(
 					false, Map.of(), dtoConverterRegistry, null, locale, null,
 					UserServiceUtil.getUserById(userId)),
@@ -167,7 +174,7 @@ public class MCPToolProviderUtil {
 			Base64.Encoder encoder = Base64.getEncoder();
 
 			String credentials =
-				jsonObject.getString("userName") +
+				jsonObject.getString("userName") + ":" +
 					jsonObject.getString("password");
 
 			return "Basic " +

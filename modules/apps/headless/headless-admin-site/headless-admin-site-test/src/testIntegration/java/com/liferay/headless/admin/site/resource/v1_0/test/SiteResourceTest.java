@@ -203,6 +203,7 @@ public class SiteResourceTest extends BaseSiteResourceTestCase {
 		_testPostSiteSuccessSiteInitializer();
 		_testPostSiteSuccessSiteTemplate();
 		_testPostSiteWithFriendlyURLMissingSlash();
+		_testPostSiteWithInheritLocales();
 		_testPostSiteWithLocalizedDescription();
 		_testPostSiteWithLocalizedName();
 		_testPostSiteWithNondefaultLocales();
@@ -914,6 +915,31 @@ public class SiteResourceTest extends BaseSiteResourceTestCase {
 			StringPool.SLASH + friendlyUrlPath, site.getFriendlyUrlPath());
 	}
 
+	private void _testPostSiteWithInheritLocales() throws Exception {
+		Site randomSite = randomSite();
+
+		Site postSite = _testPostSite_addSite(randomSite);
+
+		Assert.assertTrue(postSite.getInheritLocales());
+
+		randomSite = randomSite();
+
+		randomSite.setLocales(
+			new String[] {LocaleUtil.toW3cLanguageId(LocaleUtil.US)});
+
+		postSite = _testPostSite_addSite(randomSite);
+
+		Assert.assertFalse(postSite.getInheritLocales());
+
+		randomSite = randomSite();
+
+		randomSite.setInheritLocales(true);
+
+		postSite = _testPostSite_addSite(randomSite);
+
+		Assert.assertTrue(postSite.getInheritLocales());
+	}
+
 	private void _testPostSiteWithLocalizedDescription() throws Exception {
 		Site randomSite = randomSite();
 
@@ -966,9 +992,11 @@ public class SiteResourceTest extends BaseSiteResourceTestCase {
 		Site site = randomSite();
 
 		site.setDefaultLanguageId(String.valueOf(LocaleUtil.SPAIN));
+		site.setInheritLocales(false);
 
 		String[] locales = {
-			String.valueOf(LocaleUtil.BRAZIL), String.valueOf(LocaleUtil.SPAIN)
+			LocaleUtil.toW3cLanguageId(LocaleUtil.BRAZIL),
+			LocaleUtil.toW3cLanguageId(LocaleUtil.SPAIN)
 		};
 
 		site.setLocales(locales);

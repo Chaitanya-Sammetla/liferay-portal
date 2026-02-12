@@ -85,9 +85,13 @@ public class OpenAPIResourceImpl {
 
 	private final Set<Class<?>> _resourceClasses = new HashSet<Class<?>>() {
 		{
+			add(CommentResourceImpl.class);
+
 			add(DigitalSalesRoomResourceImpl.class);
 
 			add(DigitalSalesRoomTemplateResourceImpl.class);
+
+			add(InvitedMemberBriefResourceImpl.class);
 
 			add(UserAccountBriefResourceImpl.class);
 

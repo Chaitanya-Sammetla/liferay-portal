@@ -5,6 +5,8 @@
 
 package com.liferay.portal.search.elasticsearch8.internal.logging;
 
+import co.elastic.clients.elasticsearch._types.HealthStatus;
+
 import com.liferay.portal.kernel.search.generic.MatchAllQuery;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ClusterHealthResponseUtil;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchClientResolver;
@@ -21,9 +23,6 @@ import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.test.util.logging.ExpectedLog;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
 
-import org.elasticsearch.cluster.health.ClusterHealthStatus;
-
-import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -77,11 +76,6 @@ public class ElasticsearchSearchEngineAdapterLoggingTest {
 
 		_searchEngineAdapter =
 			_elasticsearchEngineAdapterFixture.getSearchEngineAdapter();
-	}
-
-	@After
-	public void tearDown() {
-		_elasticsearchEngineAdapterFixture.tearDown();
 	}
 
 	@ExpectedLog(
@@ -140,15 +134,15 @@ public class ElasticsearchSearchEngineAdapterLoggingTest {
 	private void _waitForElasticsearchToStart(
 		ElasticsearchClientResolver elasticsearchClientResolver) {
 
-		ClusterHealthResponseUtil.getClusterHealthResponse(
+		ClusterHealthResponseUtil.getHealthResponse(
 			elasticsearchClientResolver,
 			new HealthExpectations() {
 				{
 					setActivePrimaryShards(0);
 					setActiveShards(0);
+					setHealthStatus(HealthStatus.Green);
 					setNumberOfDataNodes(1);
 					setNumberOfNodes(1);
-					setStatus(ClusterHealthStatus.GREEN);
 					setUnassignedShards(0);
 				}
 			});

@@ -279,6 +279,19 @@ public class LayoutServiceWrapper
 	}
 
 	@Override
+	public Layout convertEmptyLayout(
+			long plid, java.util.Map<java.util.Locale, String> nameMap,
+			String type, long classNameId, long classPK,
+			String masterLayoutPageTemplateEntryERC,
+			ServiceContext serviceContext)
+		throws Exception {
+
+		return _layoutService.convertEmptyLayout(
+			plid, nameMap, type, classNameId, classPK,
+			masterLayoutPageTemplateEntryERC, serviceContext);
+	}
+
+	@Override
 	public Layout copyLayout(
 			long groupId, boolean privateLayout,
 			java.util.Map<java.util.Locale, String> localeNamesMap,
@@ -289,6 +302,24 @@ public class LayoutServiceWrapper
 		return _layoutService.copyLayout(
 			groupId, privateLayout, localeNamesMap, hidden, system,
 			copyPermissions, sourcePlid, serviceContext);
+	}
+
+	@Override
+	public Layout copyLayoutContent(Layout sourceLayout, Layout targetLayout)
+		throws Exception {
+
+		return _layoutService.copyLayoutContent(sourceLayout, targetLayout);
+	}
+
+	@Override
+	public Layout copyLayoutContent(
+			long sourceSegmentsExperienceId, Layout sourceLayout,
+			long targetSegmentsExperienceId, Layout targetLayout)
+		throws Exception {
+
+		return _layoutService.copyLayoutContent(
+			sourceSegmentsExperienceId, sourceLayout,
+			targetSegmentsExperienceId, targetLayout);
 	}
 
 	/**

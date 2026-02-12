@@ -5,16 +5,16 @@
 
 package com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.document;
 
+import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
+
 import com.liferay.portal.kernel.search.BooleanQuery;
 import com.liferay.portal.kernel.search.generic.BooleanQueryImpl;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
+import com.liferay.portal.kernel.util.ArrayUtil;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchFixture;
-import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryTranslatorFixture;
-import com.liferay.portal.search.elasticsearch8.internal.query.ElasticsearchQueryTranslator;
+import com.liferay.portal.search.elasticsearch8.internal.util.JsonpUtil;
 import com.liferay.portal.search.engine.adapter.document.DeleteByQueryDocumentRequest;
 import com.liferay.portal.test.rule.LiferayUnitTestRule;
-
-import org.elasticsearch.index.reindex.DeleteByQueryRequest;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -69,34 +69,23 @@ public class DeleteByQueryDocumentRequestExecutorTest {
 			deleteByQueryDocumentRequestExecutorImpl =
 				new DeleteByQueryDocumentRequestExecutorImpl();
 
-		ElasticsearchQueryTranslatorFixture
-			legacyElasticsearchQueryTranslatorFixture =
-				new ElasticsearchQueryTranslatorFixture();
-
 		ReflectionTestUtil.setFieldValue(
 			deleteByQueryDocumentRequestExecutorImpl,
 			"_elasticsearchClientResolver", _elasticsearchFixture);
-		ReflectionTestUtil.setFieldValue(
-			deleteByQueryDocumentRequestExecutorImpl, "_legacyQueryTranslator",
-			legacyElasticsearchQueryTranslatorFixture.
-				getElasticsearchQueryTranslator());
-		ReflectionTestUtil.setFieldValue(
-			deleteByQueryDocumentRequestExecutorImpl, "_queryTranslator",
-			new ElasticsearchQueryTranslator());
 
 		DeleteByQueryRequest deleteByQueryRequest =
 			deleteByQueryDocumentRequestExecutorImpl.createDeleteByQueryRequest(
 				deleteByQueryDocumentRequest);
 
 		Assert.assertArrayEquals(
-			new String[] {_INDEX_NAME}, deleteByQueryRequest.indices());
+			new String[] {_INDEX_NAME},
+			ArrayUtil.toStringArray(deleteByQueryRequest.index()));
 
 		Assert.assertEquals(
 			deleteByQueryDocumentRequest.isRefresh(),
-			deleteByQueryRequest.isRefresh());
+			deleteByQueryRequest.refresh());
 
-		String queryString = String.valueOf(
-			deleteByQueryRequest.getSearchRequest());
+		String queryString = JsonpUtil.toString(deleteByQueryRequest);
 
 		Assert.assertTrue(queryString.contains(_FIELD_NAME));
 		Assert.assertTrue(queryString.contains("\"value\":\"true\""));

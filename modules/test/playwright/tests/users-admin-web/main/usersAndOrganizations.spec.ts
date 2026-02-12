@@ -43,28 +43,36 @@ test(
 	{tag: '@LPD-204541'},
 	async ({usersAndOrganizationsPage}) => {
 		await usersAndOrganizationsPage.goToUsers();
-		await usersAndOrganizationsPage.openOptionsMenu();
-		await expect(
-			usersAndOrganizationsPage.exportImportOptionsMenuItem
-		).toHaveCount(0);
-		await expect(
-			usersAndOrganizationsPage.exportUsersOptionsMenuItem
-		).toBeVisible();
-		await expect(
-			usersAndOrganizationsPage.manageCustomFieldsOptionsMenuItem
-		).toBeVisible();
+
+		await expect(async () => {
+			await usersAndOrganizationsPage.openOptionsMenu();
+
+			await expect(
+				usersAndOrganizationsPage.exportImportOptionsMenuItem
+			).toHaveCount(0, {timeout: 500});
+			await expect(
+				usersAndOrganizationsPage.exportUsersOptionsMenuItem
+			).toBeVisible({timeout: 500});
+			await expect(
+				usersAndOrganizationsPage.manageCustomFieldsOptionsMenuItem
+			).toBeVisible({timeout: 500});
+		}).toPass({timeout: 5000});
 
 		await usersAndOrganizationsPage.goToOrganizations();
-		await usersAndOrganizationsPage.openOptionsMenu();
-		await expect(
-			usersAndOrganizationsPage.exportImportOptionsMenuItem
-		).toBeVisible();
-		await expect(
-			usersAndOrganizationsPage.exportUsersOptionsMenuItem
-		).toBeVisible();
-		await expect(
-			usersAndOrganizationsPage.manageCustomFieldsOptionsMenuItem
-		).toHaveCount(0);
+
+		await expect(async () => {
+			await usersAndOrganizationsPage.openOptionsMenu();
+
+			await expect(
+				usersAndOrganizationsPage.exportImportOptionsMenuItem
+			).toBeVisible({timeout: 500});
+			await expect(
+				usersAndOrganizationsPage.exportUsersOptionsMenuItem
+			).toBeVisible({timeout: 500});
+			await expect(
+				usersAndOrganizationsPage.manageCustomFieldsOptionsMenuItem
+			).toHaveCount(0, {timeout: 500});
+		}).toPass({timeout: 5000});
 	}
 );
 
@@ -361,11 +369,18 @@ test(
 
 		await usersAndOrganizationsPage.goToOrganizations();
 
-		await (
-			await usersAndOrganizationsPage.organizationsTable.rowActions(
-				organization.name
-			)
-		).click();
+		await expect(async () => {
+			await (
+				await usersAndOrganizationsPage.organizationsTable.rowActions(
+					organization.name
+				)
+			).click();
+
+			await expect(
+				usersAndOrganizationsPage.assignUsersMenuItem
+			).toBeVisible({timeout: 500});
+		}).toPass({timeout: 6000});
+
 		await usersAndOrganizationsPage.assignUsersMenuItem.click();
 
 		await (await assignUsersPage.usersTableRowCheckbox(userName)).check();
@@ -1297,11 +1312,18 @@ test(
 
 		await usersAndOrganizationsPage.goToOrganizations();
 
-		await (
-			await usersAndOrganizationsPage.organizationsTable.rowActions(
-				organization.name
-			)
-		).click();
+		await expect(async () => {
+			await (
+				await usersAndOrganizationsPage.organizationsTable.rowActions(
+					organization.name
+				)
+			).click();
+
+			await expect(
+				editOrganizationPage.organizationEditMenuItem
+			).toBeVisible({timeout: 500});
+		}).toPass({timeout: 6000});
+
 		await editOrganizationPage.organizationEditMenuItem.click();
 		await editOrganizationPage.organizationSiteLink.click();
 		await editOrganizationPage.createSiteToggle.check();
@@ -1835,5 +1857,58 @@ test(
 		await editUserPage.saveButton.click();
 
 		await waitForAlert(page);
+	}
+);
+
+test(
+	'Test XSS vulnerability when adding user with malicious first name to an organization',
+	{tag: ['@LPD-72282']},
+	async ({
+		apiHelpers,
+		organizationUsersPage,
+		page,
+		usersAndOrganizationsPage,
+	}) => {
+		const userAccount = await apiHelpers.headlessAdminUser.postUserAccount({
+			alternateName: `xsstest${getRandomInt()}`,
+			emailAddress: `xsstest${getRandomInt()}@liferay.com`,
+			familyName: `TestUser${getRandomInt()}`,
+			givenName: `<img src=x onerror="alert('x')">`,
+		});
+
+		const organization =
+			await apiHelpers.headlessAdminUser.postOrganization();
+
+		await apiHelpers.headlessAdminUser.assignUserToOrganizationByEmailAddress(
+			organization.id,
+			userAccount.emailAddress
+		);
+
+		apiHelpers.data.push({
+			id: `${organization.id}_${userAccount.emailAddress}`,
+			type: 'organizationUserAccountAssociation',
+		});
+
+		await usersAndOrganizationsPage.goToOrganizations();
+
+		await usersAndOrganizationsPage.organizationsTable
+			.valueLink(organization.name)
+			.click();
+
+		await expect(organizationUsersPage.filterButton).toBeVisible();
+
+		page.on('dialog', async (dialog) => {
+			if (dialog.type() === 'alert') {
+				throw new Error('XSS');
+			}
+		});
+
+		await organizationUsersPage.organizationUsersTable.changeView('Cards');
+
+		await expect(
+			await organizationUsersPage.screenName(
+				userAccount.givenName + ' ' + userAccount.familyName
+			)
+		).toBeVisible();
 	}
 );

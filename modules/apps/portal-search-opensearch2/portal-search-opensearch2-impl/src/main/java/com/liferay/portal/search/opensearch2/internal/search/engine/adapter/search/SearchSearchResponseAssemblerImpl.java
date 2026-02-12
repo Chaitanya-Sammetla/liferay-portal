@@ -15,7 +15,6 @@ import com.liferay.portal.search.aggregation.pipeline.PipelineAggregationResultT
 import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
-import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.groupby.GroupByResponseFactory;
 import com.liferay.portal.search.highlight.HighlightFieldBuilderFactory;
 import com.liferay.portal.search.hits.SearchHitBuilderFactory;
@@ -28,9 +27,7 @@ import com.liferay.portal.search.opensearch2.internal.aggregation.OpenSearchAggr
 import com.liferay.portal.search.opensearch2.internal.aggregation.OpenSearchPipelineAggregationResultTranslator;
 import com.liferay.portal.search.opensearch2.internal.aggregation.PipelineAggregationResultTranslatorFactory;
 import com.liferay.portal.search.opensearch2.internal.hits.HitsMetadataTranslator;
-import com.liferay.portal.search.opensearch2.internal.legacy.hits.HitDocumentTranslator;
 import com.liferay.portal.search.opensearch2.internal.search.response.SearchResponseTranslator;
-import com.liferay.portal.search.opensearch2.internal.stats.StatsTranslator;
 import com.liferay.portal.search.opensearch2.internal.util.SetterUtil;
 import com.liferay.portal.search.searcher.SearchTimeValue;
 
@@ -65,7 +62,7 @@ public class SearchSearchResponseAssemblerImpl
 		SearchSearchRequest searchSearchRequest,
 		SearchSearchResponse searchSearchResponse) {
 
-		_commonSearchResponseAssembler.assemble(
+		CommonSearchResponseAssembler.INSTANCE.assemble(
 			searchSearchRequest, searchSearchResponse, searchRequest,
 			searchResponse);
 
@@ -86,11 +83,10 @@ public class SearchSearchResponseAssemblerImpl
 		Aggregate aggregate) {
 
 		return new OpenSearchAggregationResultTranslator(
-			aggregate, _aggregationResults, _geoBuilders,
+			aggregate, _aggregationResults,
 			new HitsMetadataTranslator(
-				_documentBuilderFactory, _geoBuilders,
-				_highlightFieldBuilderFactory, _searchHitBuilderFactory,
-				_searchHitsBuilderFactory));
+				_documentBuilderFactory, _highlightFieldBuilderFactory,
+				_searchHitBuilderFactory, _searchHitsBuilderFactory));
 	}
 
 	@Override
@@ -104,9 +100,8 @@ public class SearchSearchResponseAssemblerImpl
 	@Activate
 	protected void activate() {
 		_searchResponseTranslator = new SearchResponseTranslator(
-			_groupByResponseFactory, _hitDocumentTranslator,
-			_statsRequestBuilderFactory, _statsResultsTranslator,
-			_statsTranslator);
+			_groupByResponseFactory, _statsRequestBuilderFactory,
+			_statsResultsTranslator);
 	}
 
 	protected void setCount(
@@ -169,9 +164,8 @@ public class SearchSearchResponseAssemblerImpl
 
 		HitsMetadataTranslator hitsMetadataTranslator =
 			new HitsMetadataTranslator(
-				_documentBuilderFactory, _geoBuilders,
-				_highlightFieldBuilderFactory, _searchHitBuilderFactory,
-				_searchHitsBuilderFactory);
+				_documentBuilderFactory, _highlightFieldBuilderFactory,
+				_searchHitBuilderFactory, _searchHitsBuilderFactory);
 
 		searchSearchResponse.setSearchHits(
 			hitsMetadataTranslator.translate(
@@ -198,22 +192,13 @@ public class SearchSearchResponseAssemblerImpl
 	private AggregationResults _aggregationResults;
 
 	@Reference
-	private CommonSearchResponseAssembler _commonSearchResponseAssembler;
-
-	@Reference
 	private DocumentBuilderFactory _documentBuilderFactory;
-
-	@Reference
-	private GeoBuilders _geoBuilders;
 
 	@Reference
 	private GroupByResponseFactory _groupByResponseFactory;
 
 	@Reference
 	private HighlightFieldBuilderFactory _highlightFieldBuilderFactory;
-
-	@Reference
-	private HitDocumentTranslator _hitDocumentTranslator;
 
 	@Reference
 	private SearchHitBuilderFactory _searchHitBuilderFactory;
@@ -228,8 +213,5 @@ public class SearchSearchResponseAssemblerImpl
 
 	@Reference
 	private StatsResultsTranslator _statsResultsTranslator;
-
-	@Reference
-	private StatsTranslator _statsTranslator;
 
 }

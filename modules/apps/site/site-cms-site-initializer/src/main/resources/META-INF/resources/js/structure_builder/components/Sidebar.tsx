@@ -11,7 +11,10 @@ import {sub} from 'frontend-js-web';
 import React, {useState} from 'react';
 
 import {useSelector, useStateDispatch} from '../contexts/StateContext';
+import selectPublishedChildren from '../selectors/selectPublishedChildren';
 import selectSelection from '../selectors/selectSelection';
+import selectStructure from '../selectors/selectStructure';
+import {deleteSelection} from '../utils/deleteSelection';
 import AddChildDropdown from './AddChildDropdown';
 import StructureTree from './StructureTree';
 
@@ -46,6 +49,8 @@ function Toolbar({
 }) {
 	const dispatch = useStateDispatch();
 	const selection = useSelector(selectSelection);
+	const structure = useSelector(selectStructure);
+	const publishedChildren = useSelector(selectPublishedChildren);
 
 	if (selection.length <= 1) {
 		return (
@@ -74,14 +79,21 @@ function Toolbar({
 			<ClayDropDownWithItems
 				items={[
 					{
-						label: Liferay.Language.get('delete'),
-						onClick: () => dispatch({type: 'delete-selection'}),
-						symbolLeft: 'trash',
-					},
-					{
 						label: Liferay.Language.get('create-repeatable-group'),
 						onClick: () => dispatch({type: 'add-repeatable-group'}),
 						symbolLeft: 'repeat',
+					},
+					{type: 'divider'},
+					{
+						label: Liferay.Language.get('delete'),
+						onClick: () =>
+							deleteSelection({
+								dispatch,
+								publishedChildren,
+								selection,
+								structure,
+							}),
+						symbolLeft: 'trash',
 					},
 				]}
 				trigger={

@@ -8,11 +8,9 @@ package com.liferay.portal.search.opensearch2.internal.search.engine.adapter.doc
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentResponse;
-import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.opensearch2.internal.connection.OpenSearchConnectionManager;
-import com.liferay.portal.search.opensearch2.internal.legacy.query.OpenSearchQueryTranslator;
+import com.liferay.portal.search.opensearch2.internal.legacy.query.OpenSearchQueryVisitor;
 import com.liferay.portal.search.opensearch2.internal.script.ScriptTranslator;
-import com.liferay.portal.search.query.QueryTranslator;
 import com.liferay.portal.search.script.Script;
 import com.liferay.portal.search.script.ScriptBuilder;
 import com.liferay.portal.search.script.ScriptType;
@@ -25,11 +23,9 @@ import java.util.Map;
 
 import org.opensearch.client.opensearch.OpenSearchClient;
 import org.opensearch.client.opensearch._types.query_dsl.Query;
-import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
 import org.opensearch.client.opensearch.core.UpdateByQueryRequest;
 import org.opensearch.client.opensearch.core.UpdateByQueryResponse;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -53,12 +49,6 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 			updateByQueryResponse.total(), updateByQueryResponse.took());
 	}
 
-	@Activate
-	protected void activate() {
-		_legacyQueryTranslator = new OpenSearchQueryTranslator(
-			_indexNameBuilder);
-	}
-
 	protected UpdateByQueryRequest createUpdateByQueryRequest(
 		UpdateByQueryDocumentRequest updateByQueryDocumentRequest) {
 
@@ -71,14 +61,16 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 		if (updateByQueryDocumentRequest.getPortalSearchQuery() != null) {
 			builder.query(
 				new Query(
-					_queryTranslator.translate(
-						updateByQueryDocumentRequest.getPortalSearchQuery())));
+					com.liferay.portal.search.opensearch2.internal.query.
+						OpenSearchQueryVisitor.INSTANCE.translate(
+							updateByQueryDocumentRequest.
+								getPortalSearchQuery())));
 		}
 		else {
 			builder.query(
 				new Query(
-					_legacyQueryTranslator.translate(
-						updateByQueryDocumentRequest.getQuery(), null)));
+					OpenSearchQueryVisitor.INSTANCE.translate(
+						updateByQueryDocumentRequest.getQuery())));
 		}
 
 		if (updateByQueryDocumentRequest.isRefresh()) {
@@ -107,7 +99,7 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 		JSONObject scriptJSONObject =
 			updateByQueryDocumentRequest.getScriptJSONObject();
 
-		ScriptBuilder scriptBuilder = _scripts.builder();
+		ScriptBuilder scriptBuilder = Scripts.INSTANCE.builder();
 
 		if (scriptJSONObject.has("idOrCode")) {
 			scriptBuilder.idOrCode(scriptJSONObject.getString("idOrCode"));
@@ -153,20 +145,7 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 	}
 
 	@Reference
-	private IndexNameBuilder _indexNameBuilder;
-
-	private com.liferay.portal.kernel.search.query.QueryTranslator<QueryVariant>
-		_legacyQueryTranslator;
-
-	@Reference
 	private OpenSearchConnectionManager _openSearchConnectionManager;
-
-	private final QueryTranslator<QueryVariant> _queryTranslator =
-		new com.liferay.portal.search.opensearch2.internal.query.
-			OpenSearchQueryTranslator();
-
-	@Reference
-	private Scripts _scripts;
 
 	private final ScriptTranslator _scriptTranslator = new ScriptTranslator();
 

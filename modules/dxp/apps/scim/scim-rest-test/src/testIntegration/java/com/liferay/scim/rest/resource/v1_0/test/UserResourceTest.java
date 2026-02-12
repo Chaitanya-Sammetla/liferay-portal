@@ -120,6 +120,11 @@ public class UserResourceTest extends BaseUserResourceTestCase {
 
 		Assert.assertFalse(portalUser.isActive());
 
+		_userLocalService.deleteUser(portalUser);
+
+		assertHttpResponseStatusCode(
+			404, userResource.getV2UserByIdHttpResponse(user.getId()));
+
 		// Delete an existing user with no SCIM client ID
 
 		portalUser = UserTestUtil.addUser();
@@ -159,6 +164,14 @@ public class UserResourceTest extends BaseUserResourceTestCase {
 
 		assertHttpResponseStatusCode(200, httpResponse);
 		assertValid(User.toDTO(httpResponse.getContent()));
+
+		_userLocalService.updateStatus(
+			GetterUtil.getLong(user.getId()), WorkflowConstants.STATUS_INACTIVE,
+			new ServiceContext());
+
+		user = _getUser(user.getId());
+
+		Assert.assertFalse(user.getActive());
 
 		ConfigurationTestUtil.deleteConfiguration(_pid);
 
@@ -239,6 +252,13 @@ public class UserResourceTest extends BaseUserResourceTestCase {
 				5, 0,
 				RandomTestUtil.randomString() + "eq \"" +
 					RandomTestUtil.randomString() + "\""));
+
+		assertHttpResponseStatusCode(
+			204,
+			userResource.deleteV2UserHttpResponse(
+				String.valueOf(user2.getId())));
+
+		_assertListResponse(userResource.getV2Users(5, 0, null), 1, 1, user1);
 
 		ConfigurationTestUtil.deleteConfiguration(_pid);
 
@@ -373,6 +393,31 @@ public class UserResourceTest extends BaseUserResourceTestCase {
 
 		Assert.assertTrue(portalUser4.isActive());
 
+		assertHttpResponseStatusCode(
+			204,
+			userResource.deleteV2UserHttpResponse(
+				String.valueOf(portalUser4.getUserId())));
+
+		assertHttpResponseStatusCode(
+			404,
+			userResource.getV2UserByIdHttpResponse(
+				String.valueOf(portalUser4.getUserId())));
+
+		postUser4.setActive(true);
+
+		assertHttpResponseStatusCode(
+			201, userResource.postV2UserHttpResponse(postUser4));
+
+		assertHttpResponseStatusCode(
+			200,
+			userResource.getV2UserByIdHttpResponse(
+				String.valueOf(portalUser4.getUserId())));
+
+		portalUser4 = _userLocalService.getUserByExternalReferenceCode(
+			postUser4.getExternalId(), TestPropsValues.getCompanyId());
+
+		Assert.assertTrue(portalUser4.isActive());
+
 		ConfigurationTestUtil.deleteConfiguration(_pid);
 
 		assertHttpResponseStatusCode(
@@ -418,6 +463,14 @@ public class UserResourceTest extends BaseUserResourceTestCase {
 
 		assertHttpResponseStatusCode(
 			409, userResource.putV2UserHttpResponse(user2.getId(), user2));
+
+		User user3 = testDeleteV2User_addUser();
+
+		assertHttpResponseStatusCode(
+			204, userResource.deleteV2UserHttpResponse(user3.getId()));
+
+		assertHttpResponseStatusCode(
+			404, userResource.putV2UserHttpResponse(user3.getId(), user2));
 
 		ConfigurationTestUtil.deleteConfiguration(_pid);
 
@@ -613,7 +666,10 @@ public class UserResourceTest extends BaseUserResourceTestCase {
 
 		assertHttpResponseStatusCode(200, httpResponse);
 
-		User patchUser = User.toDTO(httpResponse.getContent());
+		HttpInvoker.HttpResponse httpResponse1 =
+			userResource.getV2UserByIdHttpResponse(user.getId());
+
+		User patchUser = User.toDTO(httpResponse1.getContent());
 
 		assertValid(patchUser);
 		unsafeConsumer.accept(patchUser);

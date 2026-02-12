@@ -18,11 +18,8 @@ import com.liferay.portal.search.internal.filter.ComplexQueryPartBuilderFactoryI
 import com.liferay.portal.search.internal.query.QueriesImpl;
 import com.liferay.portal.search.opensearch2.internal.OpenSearchTestRule;
 import com.liferay.portal.search.opensearch2.internal.connection.IndexName;
-import com.liferay.portal.search.opensearch2.internal.facet.FacetTranslatorImpl;
-import com.liferay.portal.search.opensearch2.internal.filter.OpenSearchFilterTranslatorFixture;
+import com.liferay.portal.search.opensearch2.internal.facet.FacetTranslator;
 import com.liferay.portal.search.opensearch2.internal.index.LiferayIndexFixture;
-import com.liferay.portal.search.opensearch2.internal.query.OpenSearchQueryTranslator;
-import com.liferay.portal.search.opensearch2.internal.query.OpenSearchQueryTranslatorFixture;
 import com.liferay.portal.search.opensearch2.internal.query.SearchAssert;
 import com.liferay.portal.search.query.Queries;
 import com.liferay.portal.search.query.Query;
@@ -566,27 +563,6 @@ public class CommonSearchRequestBuilderAssemblerImplTest {
 	protected static CommonSearchRequestBuilderAssembler
 		createCommonSearchSourceBuilderAssembler(Queries queries) {
 
-		com.liferay.portal.search.opensearch2.internal.legacy.query.
-			OpenSearchQueryTranslatorFixture
-				legacyOpenSearchQueryTranslatorFixture =
-					new com.liferay.portal.search.opensearch2.internal.legacy.
-						query.OpenSearchQueryTranslatorFixture();
-
-		com.liferay.portal.search.opensearch2.internal.legacy.query.
-			OpenSearchQueryTranslator legacyOpenSearchQueryTranslator =
-				legacyOpenSearchQueryTranslatorFixture.
-					getOpenSearchQueryTranslator();
-
-		OpenSearchQueryTranslatorFixture openSearchQueryTranslatorFixture =
-			new OpenSearchQueryTranslatorFixture();
-
-		OpenSearchFilterTranslatorFixture openSearchFilterTranslatorFixture =
-			new OpenSearchFilterTranslatorFixture(
-				legacyOpenSearchQueryTranslator);
-
-		OpenSearchQueryTranslator openSearchQueryTranslator =
-			openSearchQueryTranslatorFixture.getOpenSearchQueryTranslator();
-
 		CommonSearchRequestBuilderAssembler
 			commonSearchRequestBuilderAssembler =
 				new CommonSearchRequestBuilderAssemblerImpl();
@@ -596,16 +572,7 @@ public class CommonSearchRequestBuilderAssemblerImplTest {
 			createComplexQueryBuilderFactory(queries));
 		ReflectionTestUtil.setFieldValue(
 			commonSearchRequestBuilderAssembler, "_facetTranslator",
-			new FacetTranslatorImpl());
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_filterTranslator",
-			openSearchFilterTranslatorFixture.getOpenSearchFilterTranslator());
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_legacyQueryTranslator",
-			legacyOpenSearchQueryTranslator);
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_queryTranslator",
-			openSearchQueryTranslator);
+			new FacetTranslator());
 
 		return commonSearchRequestBuilderAssembler;
 	}
@@ -613,7 +580,7 @@ public class CommonSearchRequestBuilderAssemblerImplTest {
 	protected static ComplexQueryBuilderFactory
 		createComplexQueryBuilderFactory(Queries queries) {
 
-		return () -> new ComplexQueryBuilderImpl(queries, null);
+		return () -> new ComplexQueryBuilderImpl(queries);
 	}
 
 	private void _addPart(

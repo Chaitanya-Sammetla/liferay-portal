@@ -264,8 +264,8 @@ public class SearchSolrQueryAssemblerImpl implements SearchSolrQueryAssembler {
 		}
 	}
 
-	@Reference
-	private BaseSolrQueryAssembler _baseSolrQueryAssembler;
+	private final BaseSolrQueryAssembler _baseSolrQueryAssembler =
+		new BaseSolrQueryAssembler();
 
 	@Reference
 	private GroupByRequestFactory _groupByRequestFactory;
@@ -278,7 +278,6 @@ public class SearchSolrQueryAssemblerImpl implements SearchSolrQueryAssembler {
 	@Reference
 	private StatsRequestBuilderFactory _statsRequestBuilderFactory;
 
-	@Reference
-	private StatsTranslator _statsTranslator;
+	private final StatsTranslator _statsTranslator = new StatsTranslator();
 
 }

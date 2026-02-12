@@ -42,7 +42,6 @@ import com.liferay.item.selector.criteria.InfoItemItemSelectorReturnType;
 import com.liferay.item.selector.criteria.asset.criterion.AssetEntryItemSelectorCriterion;
 import com.liferay.item.selector.criteria.group.criterion.GroupItemSelectorCriterion;
 import com.liferay.item.selector.criteria.info.item.criterion.InfoItemItemSelectorCriterion;
-import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.petra.function.UnsafeConsumer;
 import com.liferay.petra.function.transform.TransformUtil;
@@ -895,6 +894,14 @@ public class EditAssetListDisplayContext {
 		SegmentsEntry segmentsEntry =
 			SegmentsEntryLocalServiceUtil.fetchSegmentsEntry(segmentsEntryId);
 
+		if (segmentsEntry == null) {
+			if (_log.isWarnEnabled()) {
+				_log.warn("Unable to get segments entry " + segmentsEntryId);
+			}
+
+			return StringPool.BLANK;
+		}
+
 		return segmentsEntry.getName(locale);
 	}
 
@@ -1008,9 +1015,23 @@ public class EditAssetListDisplayContext {
 						return true;
 					}
 
-					String className =
-						_infoSearchClassMapperRegistry.getSearchClassName(
-							PortalUtil.getClassName(classNameId));
+					String className = null;
+
+					try {
+						className =
+							_infoSearchClassMapperRegistry.getSearchClassName(
+								PortalUtil.getClassName(classNameId));
+					}
+					catch (Exception exception) {
+						if (_log.isDebugEnabled()) {
+							_log.debug(
+								"Unable to get class name for class name ID " +
+									classNameId,
+								exception);
+						}
+
+						continue;
+					}
 
 					AssetRendererFactory<?> assetRendererFactory =
 						AssetRendererFactoryRegistryUtil.
@@ -1394,18 +1415,7 @@ public class EditAssetListDisplayContext {
 						_httpServletRequest, "select-x", classTypeName,
 						false)));
 
-			ObjectDefinition objectDefinition =
-				_objectDefinitionLocalService.fetchObjectDefinitionByClassName(
-					_themeDisplay.getCompanyId(),
-					assetRendererFactory.getClassName());
-
-			if ((objectDefinition != null) && objectDefinition.isCMS()) {
-				dropdownItem.setLabel(
-					StringUtil.appendParentheticalSuffix(classTypeName, "CMS"));
-			}
-			else {
-				dropdownItem.setLabel(classTypeName);
-			}
+			dropdownItem.setLabel(classTypeName);
 		};
 	}
 

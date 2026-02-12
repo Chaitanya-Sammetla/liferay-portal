@@ -45,6 +45,10 @@ test.afterEach(async ({systemSettingsPage}) => {
 				.getByRole('button', {name: 'Actions'})
 				.isVisible()
 		) {
+			systemSettingsPage.page.once('dialog', async (dialogWindow) => {
+				await dialogWindow.accept();
+			});
+
 			await clickAndExpectToBeVisible({
 				autoClick: true,
 				target: systemSettingsPage.page.getByRole('menuitem', {
@@ -84,8 +88,39 @@ test.afterEach(async ({systemSettingsPage}) => {
 	});
 });
 
+test.beforeEach(async ({page, systemSettingsPage}) => {
+	const productAnalyticsHeading = await page.getByRole('heading', {
+		name: 'Product Analytics',
+	});
+	await test.step('Verify Product Analytics Instance Level Configuration', async () => {
+		await systemSettingsPage.goToSystemSetting(
+			'Privacy',
+			'Product Analytics'
+		);
+
+		await productAnalyticsHeading.waitFor();
+
+		const enabledButton = await page.getByLabel('Enabled');
+
+		await enabledButton.setChecked(true);
+
+		if (await page.getByRole('button', {name: 'Save'}).isVisible()) {
+			await page
+				.getByRole('button', {name: 'Save'})
+				.dispatchEvent('click');
+		}
+		else {
+			await page
+				.getByRole('button', {name: 'Update'})
+				.dispatchEvent('click');
+		}
+
+		await page.waitForTimeout(1000);
+	});
+});
+
 test(
-	'AC1: Verify "Product Analytics" Configuration is present and enabled by default',
+	'Verify "Product Analytics" Configuration is disabled by default',
 	{tag: '@LPD-60003'},
 	async ({
 		instanceSettingsPage,
@@ -93,6 +128,39 @@ test(
 		siteSettingsPage,
 		systemSettingsPage,
 	}) => {
+		await test.step('Reset Product Analytics System Settings if needed', async () => {
+			await systemSettingsPage.goToSystemSetting(
+				'Privacy',
+				'Product Analytics'
+			);
+
+			await systemSettingsPage.page
+				.getByRole('heading', {
+					name: 'Product Analytics',
+				})
+				.waitFor();
+
+			if (
+				await systemSettingsPage.page
+					.getByRole('button', {name: 'Actions'})
+					.isVisible()
+			) {
+				page.once('dialog', async (dialogWindow) => {
+					await dialogWindow.accept();
+				});
+
+				await clickAndExpectToBeVisible({
+					autoClick: true,
+					target: systemSettingsPage.page.getByRole('menuitem', {
+						name: 'Reset Default Values',
+					}),
+					trigger: systemSettingsPage.page.getByRole('button', {
+						name: 'Actions',
+					}),
+				});
+			}
+		});
+
 		const enabledButton = await page.getByLabel('Enabled');
 		const productAnalyticsHeading = await page.getByRole('heading', {
 			name: 'Product Analytics',
@@ -106,7 +174,7 @@ test(
 
 			await productAnalyticsHeading.waitFor();
 
-			await expect(enabledButton).toBeChecked();
+			await expect(enabledButton).not.toBeChecked();
 		});
 
 		await test.step('Verify Product Analytics Instance Level Configuration', async () => {
@@ -118,7 +186,7 @@ test(
 
 			await productAnalyticsHeading.waitFor();
 
-			await expect(enabledButton).toBeChecked();
+			await expect(enabledButton).not.toBeChecked();
 		});
 
 		await test.step('Verify Product Analytics Site Level Configuration', async () => {
@@ -129,7 +197,7 @@ test(
 
 			await productAnalyticsHeading.waitFor();
 
-			await expect(enabledButton).toBeChecked();
+			await expect(enabledButton).not.toBeChecked();
 		});
 	}
 );
@@ -140,7 +208,7 @@ test(
 	async ({page, productAnalyticsBannerPage, systemSettingsPage}) => {
 		await test.step('Verify Product Analytics Banner is present', async () => {
 			await expect(
-				await productAnalyticsBannerPage.bannerLocator
+				productAnalyticsBannerPage.bannerLocator
 			).toBeVisible();
 		});
 
@@ -160,9 +228,16 @@ test(
 
 			await enabledButton.setChecked(false);
 
-			await page
-				.getByRole('button', {name: 'Save'})
-				.dispatchEvent('click');
+			if (await page.getByRole('button', {name: 'Save'}).isVisible()) {
+				await page
+					.getByRole('button', {name: 'Save'})
+					.dispatchEvent('click');
+			}
+			else {
+				await page
+					.getByRole('button', {name: 'Update'})
+					.dispatchEvent('click');
+			}
 
 			await waitForAlert(page);
 
@@ -170,8 +245,10 @@ test(
 		});
 
 		await test.step('Verify Product Analytics Banner is no longer present', async () => {
+			page.reload();
+
 			await expect(
-				await productAnalyticsBannerPage.bannerLocator
+				productAnalyticsBannerPage.bannerLocator
 			).not.toBeVisible();
 		});
 	}
@@ -196,9 +273,16 @@ test(
 				await enabledButton.click();
 			}
 
-			await page
-				.getByRole('button', {name: 'Save'})
-				.dispatchEvent('click');
+			if (await page.getByRole('button', {name: 'Save'}).isVisible()) {
+				await page
+					.getByRole('button', {name: 'Save'})
+					.dispatchEvent('click');
+			}
+			else {
+				await page
+					.getByRole('button', {name: 'Update'})
+					.dispatchEvent('click');
+			}
 
 			await page.waitForTimeout(1000);
 			await page.reload();
@@ -210,7 +294,7 @@ test(
 
 		await test.step('Verify Product Analytics Banner is present', async () => {
 			await expect(
-				await productAnalyticsBannerPage.bannerLocator
+				productAnalyticsBannerPage.bannerLocator
 			).toBeVisible();
 		});
 
@@ -221,14 +305,16 @@ test(
 		await acceptAll.click();
 
 		await test.step('Verify Product Analytics Banner is no longer present', async () => {
+			page.reload();
+
 			await expect(
-				await productAnalyticsBannerPage.bannerLocator
+				productAnalyticsBannerPage.bannerLocator
 			).not.toBeVisible();
 		});
 
 		await test.step('Verify Cookies Banner shows up', async () => {
 			await expect(
-				await page.locator(
+				page.locator(
 					'#p_p_id_com_liferay_cookies_banner_web_portlet_CookiesBannerPortlet_'
 				)
 			).toBeVisible();
@@ -279,7 +365,7 @@ test(
 
 		await test.step('Verify Product Analytics Banner is present', async () => {
 			await expect(
-				await productAnalyticsBannerPage.bannerLocator
+				productAnalyticsBannerPage.bannerLocator
 			).toBeVisible();
 		});
 
@@ -291,13 +377,13 @@ test(
 
 		await test.step('Verify Product Analytics Banner is no longer present', async () => {
 			await expect(
-				await productAnalyticsBannerPage.bannerLocator
+				productAnalyticsBannerPage.bannerLocator
 			).not.toBeVisible();
 		});
 
 		await test.step('Verify Cookies Banner shows up', async () => {
 			await expect(
-				await page.locator(
+				page.locator(
 					'#p_p_id_com_liferay_cookies_banner_web_portlet_CookiesBannerPortlet_'
 				)
 			).toBeVisible();
@@ -325,9 +411,16 @@ test(
 
 			await enabledButton.setChecked(false);
 
-			await page
-				.getByRole('button', {name: 'Save'})
-				.dispatchEvent('click');
+			if (await page.getByRole('button', {name: 'Save'}).isVisible()) {
+				await page
+					.getByRole('button', {name: 'Save'})
+					.dispatchEvent('click');
+			}
+			else {
+				await page
+					.getByRole('button', {name: 'Update'})
+					.dispatchEvent('click');
+			}
 
 			await waitForAlert(page);
 
@@ -350,9 +443,16 @@ test(
 
 			await enabledButton.setChecked(false);
 
-			await page
-				.getByRole('button', {name: 'Save'})
-				.dispatchEvent('click');
+			if (await page.getByRole('button', {name: 'Save'}).isVisible()) {
+				await page
+					.getByRole('button', {name: 'Save'})
+					.dispatchEvent('click');
+			}
+			else {
+				await page
+					.getByRole('button', {name: 'Update'})
+					.dispatchEvent('click');
+			}
 
 			await waitForAlert(page);
 
@@ -360,6 +460,8 @@ test(
 		});
 
 		await accountSettingsPage.goToAccountSettings();
+
+		page.reload();
 
 		const dataAndPrivacyTab = await accountSettingsPage.page.locator(
 			'.nav-link',

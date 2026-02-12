@@ -13,7 +13,6 @@ import com.liferay.portal.search.aggregation.AggregationResults;
 import com.liferay.portal.search.aggregation.pipeline.PipelineAggregation;
 import com.liferay.portal.search.aggregation.pipeline.PipelineAggregationResultTranslator;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
-import com.liferay.portal.search.elasticsearch7.internal.SearchHitDocumentTranslator;
 import com.liferay.portal.search.elasticsearch7.internal.aggregation.AggregationResultTranslatorFactory;
 import com.liferay.portal.search.elasticsearch7.internal.aggregation.ElasticsearchAggregationResultTranslator;
 import com.liferay.portal.search.elasticsearch7.internal.aggregation.ElasticsearchAggregationResultsTranslator;
@@ -21,10 +20,8 @@ import com.liferay.portal.search.elasticsearch7.internal.aggregation.PipelineAgg
 import com.liferay.portal.search.elasticsearch7.internal.aggregation.pipeline.ElasticsearchPipelineAggregationResultTranslator;
 import com.liferay.portal.search.elasticsearch7.internal.hits.SearchHitsTranslator;
 import com.liferay.portal.search.elasticsearch7.internal.search.response.SearchResponseTranslator;
-import com.liferay.portal.search.elasticsearch7.internal.stats.StatsTranslator;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
-import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.groupby.GroupByResponseFactory;
 import com.liferay.portal.search.highlight.HighlightFieldBuilderFactory;
 import com.liferay.portal.search.hits.SearchHitBuilderFactory;
@@ -62,7 +59,7 @@ public class SearchSearchResponseAssemblerImpl
 		SearchSearchRequest searchSearchRequest,
 		SearchSearchResponse searchSearchResponse) {
 
-		_commonSearchResponseAssembler.assemble(
+		CommonSearchResponseAssembler.INSTANCE.assemble(
 			searchSearchRequest, searchSearchResponse, searchRequestString,
 			searchResponse);
 
@@ -87,9 +84,7 @@ public class SearchSearchResponseAssemblerImpl
 			elasticsearchAggregation, _aggregationResults,
 			new SearchHitsTranslator(
 				_searchHitBuilderFactory, _searchHitsBuilderFactory,
-				_documentBuilderFactory, _highlightFieldBuilderFactory,
-				_geoBuilders),
-			_geoBuilders);
+				_documentBuilderFactory, _highlightFieldBuilderFactory));
 	}
 
 	@Override
@@ -105,9 +100,8 @@ public class SearchSearchResponseAssemblerImpl
 	@Activate
 	protected void activate() {
 		_searchResponseTranslator = new SearchResponseTranslator(
-			_groupByResponseFactory, _searchHitDocumentTranslator,
-			_statsRequestBuilderFactory, _statsResultsTranslator,
-			_statsTranslator);
+			_groupByResponseFactory, _statsRequestBuilderFactory,
+			_statsResultsTranslator);
 	}
 
 	protected void setCount(
@@ -170,8 +164,7 @@ public class SearchSearchResponseAssemblerImpl
 
 		SearchHitsTranslator searchHitsTranslator = new SearchHitsTranslator(
 			_searchHitBuilderFactory, _searchHitsBuilderFactory,
-			_documentBuilderFactory, _highlightFieldBuilderFactory,
-			_geoBuilders);
+			_documentBuilderFactory, _highlightFieldBuilderFactory);
 
 		SearchHits searchHits = searchResponse.getHits();
 
@@ -201,13 +194,7 @@ public class SearchSearchResponseAssemblerImpl
 	private AggregationResults _aggregationResults;
 
 	@Reference
-	private CommonSearchResponseAssembler _commonSearchResponseAssembler;
-
-	@Reference
 	private DocumentBuilderFactory _documentBuilderFactory;
-
-	@Reference
-	private GeoBuilders _geoBuilders;
 
 	@Reference
 	private GroupByResponseFactory _groupByResponseFactory;
@@ -219,9 +206,6 @@ public class SearchSearchResponseAssemblerImpl
 	private SearchHitBuilderFactory _searchHitBuilderFactory;
 
 	@Reference
-	private SearchHitDocumentTranslator _searchHitDocumentTranslator;
-
-	@Reference
 	private SearchHitsBuilderFactory _searchHitsBuilderFactory;
 
 	private SearchResponseTranslator _searchResponseTranslator;
@@ -231,8 +215,5 @@ public class SearchSearchResponseAssemblerImpl
 
 	@Reference
 	private StatsResultsTranslator _statsResultsTranslator;
-
-	@Reference
-	private StatsTranslator _statsTranslator;
 
 }

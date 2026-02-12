@@ -126,8 +126,8 @@ public class SectionDisplayContextHelper {
 			sb.append(filterString);
 		}
 
-		sb.append("&nestedFields=embedded,file.metadata,");
-		sb.append("file.previewURL,file.thumbnailURL,");
+		sb.append("&nestedFields=embedded,embeddedTaxonomyCategory,");
+		sb.append("file.metadata,file.previewURL,file.thumbnailURL,");
 		sb.append("numberOfObjectEntries,numberOfObjectEntryFolders,");
 		sb.append("systemProperties.objectDefinitionBrief");
 
@@ -288,21 +288,11 @@ public class SectionDisplayContextHelper {
 				LanguageUtil.get(httpServletRequest, "export-for-translation"),
 				null, "get", null),
 			new FDSActionDropdownItem(
-				PortletURLBuilder.create(
-					_portal.getControlPanelPortletURL(
-						httpServletRequest, TranslationPortletKeys.TRANSLATION,
-						ActionRequest.RENDER_PHASE)
-				).setMVCRenderCommandName(
-					"/translation/import_translation"
-				).setParameter(
-					"className", "{entryClassName}"
-				).setParameter(
-					"classPK", "{embedded.id}"
-				).setParameter(
-					"groupId", "{embedded.scopeId}"
-				).setWindowState(
-					LiferayWindowState.POP_UP
-				).buildString(),
+				StringBundler.concat(
+					themeDisplay.getPortalURL(), themeDisplay.getPathMain(),
+					GroupConstants.CMS_FRIENDLY_URL,
+					"/edit_content_item?objectEntryId={embedded.id}&",
+					"redirect=", themeDisplay.getURLCurrent()),
 				"download", "import-translation",
 				LanguageUtil.get(httpServletRequest, "import-translation"),
 				null, "update", null),

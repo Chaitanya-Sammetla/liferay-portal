@@ -22,6 +22,9 @@ import com.liferay.list.type.model.ListTypeEntry;
 import com.liferay.list.type.service.ListTypeEntryLocalService;
 import com.liferay.object.constants.ObjectActionTriggerConstants;
 import com.liferay.object.constants.ObjectFieldConstants;
+import com.liferay.object.constants.ObjectFieldSettingConstants;
+import com.liferay.object.constants.ObjectRelationshipConstants;
+import com.liferay.object.field.setting.util.ObjectFieldSettingUtil;
 import com.liferay.object.field.util.ObjectFieldUtil;
 import com.liferay.object.info.field.converter.ObjectFieldInfoFieldConverter;
 import com.liferay.object.info.field.type.util.ObjectFieldInfoFieldTypeUtil;
@@ -30,7 +33,10 @@ import com.liferay.object.info.item.util.ObjectEntryInfoItemUtil;
 import com.liferay.object.model.ObjectAction;
 import com.liferay.object.model.ObjectDefinition;
 import com.liferay.object.model.ObjectField;
+import com.liferay.object.model.ObjectFieldSetting;
 import com.liferay.object.model.ObjectRelationship;
+import com.liferay.object.related.models.ObjectRelatedModelsProvider;
+import com.liferay.object.related.models.ObjectRelatedModelsProviderRegistry;
 import com.liferay.object.rest.dto.v1_0.ListEntry;
 import com.liferay.object.rest.dto.v1_0.ObjectEntry;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManagerRegistry;
@@ -39,6 +45,7 @@ import com.liferay.object.service.ObjectActionLocalService;
 import com.liferay.object.service.ObjectDefinitionLocalService;
 import com.liferay.object.service.ObjectEntryLocalService;
 import com.liferay.object.service.ObjectFieldLocalService;
+import com.liferay.object.service.ObjectFieldSettingLocalServiceUtil;
 import com.liferay.object.service.ObjectRelationshipLocalService;
 import com.liferay.petra.function.transform.TransformUtil;
 import com.liferay.petra.string.StringPool;
@@ -47,10 +54,12 @@ import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.kernel.log.Log;
 import com.liferay.portal.kernel.log.LogFactoryUtil;
+import com.liferay.portal.kernel.model.BaseModel;
 import com.liferay.portal.kernel.repository.model.FileEntry;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
 import com.liferay.portal.kernel.util.DateUtil;
 import com.liferay.portal.kernel.util.GetterUtil;
+import com.liferay.portal.kernel.util.GroupThreadLocal;
 import com.liferay.portal.kernel.util.KeyValuePair;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
@@ -59,6 +68,9 @@ import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.StringUtil;
 
 import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 
 import java.util.ArrayList;
@@ -168,8 +180,11 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 
 			for (ObjectField relatedObjectField :
 					objectFieldLocalService.getObjectFields(
-						parentObjectDefinition.getObjectDefinitionId(),
-						false)) {
+						parentObjectDefinition.getObjectDefinitionId())) {
+
+				if (relatedObjectField.isMetadata()) {
+					continue;
+				}
 
 				String namespace =
 					ObjectEntryInfoItemUtil.getInfoFieldNamespace(
@@ -246,6 +261,50 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 		return infoFieldValues;
 	}
 
+	public static Object getMultipleRelationshipInfoFieldValue(
+		ObjectRelationship objectRelationship,
+		ObjectDefinitionLocalService objectDefinitionLocalService,
+		long objectEntryId,
+		ObjectRelatedModelsProviderRegistry
+			objectRelatedModelsProviderRegistry) {
+
+		if (!objectRelationship.compareType(
+				ObjectRelationshipConstants.TYPE_MANY_TO_MANY)) {
+
+			return null;
+		}
+
+		try {
+			ObjectDefinition relatedObjectDefinition =
+				objectDefinitionLocalService.getObjectDefinition(
+					objectRelationship.getObjectDefinitionId2());
+
+			ObjectRelatedModelsProvider objectRelatedModelsProvider =
+				objectRelatedModelsProviderRegistry.
+					getObjectRelatedModelsProvider(
+						relatedObjectDefinition.getClassName(),
+						relatedObjectDefinition.getCompanyId(),
+						objectRelationship.getType());
+
+			long[] relatedPrimaryKeys = TransformUtil.transformToLongArray(
+				(List<BaseModel<?>>)
+					objectRelatedModelsProvider.getRelatedModels(
+						GroupThreadLocal.getGroupId(),
+						objectRelationship.getObjectRelationshipId(), null,
+						false, objectEntryId, null, -1, -1, null),
+				BaseModel::getPrimaryKeyObj);
+
+			return StringUtil.merge(relatedPrimaryKeys, StringPool.COMMA);
+		}
+		catch (PortalException portalException) {
+			if (_log.isDebugEnabled()) {
+				_log.debug(portalException);
+			}
+		}
+
+		return null;
+	}
+
 	private static void _addInfoFieldValue(
 			DLAppLocalService dlAppLocalService, DLURLHelper dlURLHelper,
 			List<InfoFieldValue<Object>> infoFieldValues,
@@ -293,7 +352,7 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 							_parseValue(
 								listTypeEntryLocalService, curLocale,
 								objectEntryLocalService, objectField,
-								objectRelationshipLocalService,
+								objectRelationshipLocalService, themeDisplay,
 								entry.getValue()));
 					}
 				}
@@ -302,7 +361,8 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 		else {
 			infoFieldValue = _parseValue(
 				listTypeEntryLocalService, locale, objectEntryLocalService,
-				objectField, objectRelationshipLocalService, value);
+				objectField, objectRelationshipLocalService, themeDisplay,
+				value);
 		}
 
 		if (infoFieldValue == null) {
@@ -526,7 +586,7 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 		ObjectEntryLocalService objectEntryLocalService,
 		ObjectField objectField,
 		ObjectRelationshipLocalService objectRelationshipLocalService,
-		Object value) {
+		ThemeDisplay themeDisplay, Object value) {
 
 		if (value == null) {
 			return null;
@@ -584,10 +644,46 @@ public class ObjectEntryInfoItemValuesProviderUtil {
 		else if (objectField.compareBusinessType(
 					ObjectFieldConstants.BUSINESS_TYPE_DATE_TIME)) {
 
-			return LocalDateTime.parse(
-				value.toString(),
+			String valueString = String.valueOf(value);
+
+			LocalDateTime localDateTime = LocalDateTime.parse(
+				valueString,
 				DateTimeFormatter.ofPattern(
-					ObjectFieldUtil.getDateTimePattern(value.toString())));
+					ObjectFieldUtil.getDateTimePattern(valueString)));
+
+			List<ObjectFieldSetting> objectFieldSettings =
+				ObjectFieldSettingLocalServiceUtil.
+					getObjectFieldObjectFieldSettings(
+						objectField.getObjectFieldId());
+
+			if (objectFieldSettings.isEmpty()) {
+				return localDateTime;
+			}
+
+			for (ObjectFieldSetting objectFieldSetting : objectFieldSettings) {
+				if (ObjectFieldSettingConstants.NAME_TIME_STORAGE.equals(
+						objectFieldSetting.getName()) &&
+					ObjectFieldSettingConstants.VALUE_USE_INPUT_AS_ENTERED.
+						equals(objectFieldSetting.getValue())) {
+
+					return localDateTime;
+				}
+			}
+
+			ZonedDateTime utcZonedDateTime = localDateTime.atZone(
+				ZoneOffset.UTC);
+
+			String zoneId = ObjectFieldSettingUtil.getTimeZoneId(
+				objectFieldSettings, themeDisplay.getUser());
+
+			if (zoneId == null) {
+				return utcZonedDateTime.toLocalDateTime();
+			}
+
+			ZonedDateTime userZonedDateTime =
+				utcZonedDateTime.withZoneSameInstant(ZoneId.of(zoneId));
+
+			return userZonedDateTime.toLocalDateTime();
 		}
 		else if (objectField.compareBusinessType(
 					ObjectFieldConstants.BUSINESS_TYPE_MULTISELECT_PICKLIST)) {

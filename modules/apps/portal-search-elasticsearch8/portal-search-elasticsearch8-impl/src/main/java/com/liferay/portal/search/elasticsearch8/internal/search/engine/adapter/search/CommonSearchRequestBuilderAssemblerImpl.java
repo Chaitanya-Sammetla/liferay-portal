@@ -7,10 +7,8 @@ package com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.
 
 import co.elastic.clients.elasticsearch._types.Time;
 import co.elastic.clients.elasticsearch._types.TimeUnit;
-import co.elastic.clients.elasticsearch._types.aggregations.Aggregation;
 import co.elastic.clients.elasticsearch._types.query_dsl.BoolQuery;
 import co.elastic.clients.elasticsearch._types.query_dsl.QueryBuilders;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryVariant;
 import co.elastic.clients.elasticsearch.core.SearchRequest;
 import co.elastic.clients.elasticsearch.core.search.PointInTimeReference;
 import co.elastic.clients.elasticsearch.core.search.RescoreQuery;
@@ -18,24 +16,23 @@ import co.elastic.clients.elasticsearch.core.search.ScoreMode;
 import co.elastic.clients.elasticsearch.core.search.TrackHits;
 import co.elastic.clients.util.NamedValue;
 
-import com.liferay.portal.kernel.search.filter.FilterTranslator;
+import com.liferay.portal.kernel.search.filter.Filter;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.MapUtil;
-import com.liferay.portal.search.aggregation.AggregationTranslator;
-import com.liferay.portal.search.aggregation.pipeline.PipelineAggregationTranslator;
+import com.liferay.portal.search.elasticsearch8.internal.aggregation.ElasticsearchAggregationVisitor;
+import com.liferay.portal.search.elasticsearch8.internal.aggregation.ElasticsearchPipelineAggregationVisitor;
 import com.liferay.portal.search.elasticsearch8.internal.facet.FacetTranslator;
-import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryTranslator;
+import com.liferay.portal.search.elasticsearch8.internal.filter.ElasticsearchFilterVisitor;
+import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryVisitor;
 import com.liferay.portal.search.elasticsearch8.internal.stats.StatsTranslator;
 import com.liferay.portal.search.elasticsearch8.internal.util.SetterUtil;
 import com.liferay.portal.search.engine.adapter.search.BaseSearchRequest;
 import com.liferay.portal.search.filter.ComplexQueryBuilderFactory;
 import com.liferay.portal.search.filter.ComplexQueryPart;
-import com.liferay.portal.search.index.IndexNameBuilder;
 import com.liferay.portal.search.pit.PointInTime;
 import com.liferay.portal.search.query.BooleanQuery;
 import com.liferay.portal.search.query.Query;
-import com.liferay.portal.search.query.QueryTranslator;
 import com.liferay.portal.search.rescore.Rescore;
 import com.liferay.portal.search.stats.StatsRequest;
 
@@ -45,7 +42,6 @@ import java.util.List;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -76,12 +72,6 @@ public class CommonSearchRequestBuilderAssemblerImpl
 		_setStatsRequests(baseSearchRequest, searchRequestBuilder);
 		_setTimeout(baseSearchRequest, searchRequestBuilder);
 		_setTrackTotalHits(baseSearchRequest, searchRequestBuilder);
-	}
-
-	@Activate
-	protected void activate() {
-		_legacyQueryTranslator = new ElasticsearchQueryTranslator(
-			_indexNameBuilder);
 	}
 
 	protected void setQuery(
@@ -144,8 +134,9 @@ public class CommonSearchRequestBuilderAssemblerImpl
 
 		if (baseSearchRequest.getPostFilterQuery() != null) {
 			query = new co.elastic.clients.elasticsearch._types.query_dsl.Query(
-				_queryTranslator.translate(
-					baseSearchRequest.getPostFilterQuery()));
+				com.liferay.portal.search.elasticsearch8.internal.query.
+					ElasticsearchQueryVisitor.INSTANCE.translate(
+						baseSearchRequest.getPostFilterQuery()));
 		}
 
 		List<ComplexQueryPart> complexQueryParts =
@@ -321,7 +312,8 @@ public class CommonSearchRequestBuilderAssemblerImpl
 		MapUtil.isNotEmptyForEach(
 			baseSearchRequest.getAggregationsMap(),
 			(key, aggregation) -> searchRequestBuilder.aggregations(
-				key, _aggregationTranslator.translate(aggregation)));
+				key,
+				aggregation.accept(ElasticsearchAggregationVisitor.INSTANCE)));
 	}
 
 	private void _setExplain(
@@ -387,7 +379,8 @@ public class CommonSearchRequestBuilderAssemblerImpl
 			baseSearchRequest.getPipelineAggregationsMap(),
 			(key, pipelineAggregation) -> searchRequestBuilder.aggregations(
 				key,
-				_pipelineAggregationTranslator.translate(pipelineAggregation)));
+				pipelineAggregation.accept(
+					ElasticsearchPipelineAggregationVisitor.INSTANCE)));
 	}
 
 	private void _setPointInTime(
@@ -427,10 +420,11 @@ public class CommonSearchRequestBuilderAssemblerImpl
 			searchRequestBuilder.postFilter(query);
 		}
 		else if (baseSearchRequest.getPostFilter() != null) {
+			Filter filter = baseSearchRequest.getPostFilter();
+
 			searchRequestBuilder.postFilter(
 				new co.elastic.clients.elasticsearch._types.query_dsl.Query(
-					_filterTranslator.translate(
-						baseSearchRequest.getPostFilter(), null)));
+					filter.accept(ElasticsearchFilterVisitor.INSTANCE)));
 		}
 	}
 
@@ -455,7 +449,8 @@ public class CommonSearchRequestBuilderAssemblerImpl
 
 		rescoreQueryBuilder.query(
 			new co.elastic.clients.elasticsearch._types.query_dsl.Query(
-				_queryTranslator.translate(query)));
+				com.liferay.portal.search.elasticsearch8.internal.query.
+					ElasticsearchQueryVisitor.INSTANCE.translate(query)));
 
 		co.elastic.clients.elasticsearch.core.search.Rescore.Builder
 			rescoreBuilder =
@@ -490,7 +485,9 @@ public class CommonSearchRequestBuilderAssemblerImpl
 
 			rescoreQueryBuilder.query(
 				new co.elastic.clients.elasticsearch._types.query_dsl.Query(
-					_queryTranslator.translate(rescore.getQuery())));
+					com.liferay.portal.search.elasticsearch8.internal.query.
+						ElasticsearchQueryVisitor.INSTANCE.translate(
+							rescore.getQuery())));
 
 			SetterUtil.setNotNullFloatAsDouble(
 				rescoreQueryBuilder::queryWeight, rescore.getQueryWeight());
@@ -578,7 +575,7 @@ public class CommonSearchRequestBuilderAssemblerImpl
 		co.elastic.clients.elasticsearch._types.query_dsl.Query
 			translatedQuery =
 				new co.elastic.clients.elasticsearch._types.query_dsl.Query(
-					_legacyQueryTranslator.translate(query, null));
+					ElasticsearchQueryVisitor.INSTANCE.translate(query));
 
 		if ((query.getPreBooleanFilter() == null) ||
 			(query instanceof com.liferay.portal.kernel.search.BooleanQuery)) {
@@ -594,10 +591,12 @@ public class CommonSearchRequestBuilderAssemblerImpl
 
 		BoolQuery.Builder builder = QueryBuilders.bool();
 
+		Filter filter = query.getPreBooleanFilter();
+
 		builder.filter(
 			new co.elastic.clients.elasticsearch._types.query_dsl.Query(
-				_filterTranslator.translate(
-					query.getPreBooleanFilter(), null)));
+				filter.accept(ElasticsearchFilterVisitor.INSTANCE)));
+
 		builder.must(translatedQuery);
 
 		return new co.elastic.clients.elasticsearch._types.query_dsl.Query(
@@ -612,36 +611,14 @@ public class CommonSearchRequestBuilderAssemblerImpl
 		}
 
 		return new co.elastic.clients.elasticsearch._types.query_dsl.Query(
-			_queryTranslator.translate(query));
+			com.liferay.portal.search.elasticsearch8.internal.query.
+				ElasticsearchQueryVisitor.INSTANCE.translate(query));
 	}
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)")
-	private AggregationTranslator<Aggregation> _aggregationTranslator;
 
 	@Reference
 	private ComplexQueryBuilderFactory _complexQueryBuilderFactory;
 
-	@Reference
-	private FacetTranslator _facetTranslator;
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)")
-	private FilterTranslator<QueryVariant> _filterTranslator;
-
-	@Reference
-	private IndexNameBuilder _indexNameBuilder;
-
-	private com.liferay.portal.kernel.search.query.QueryTranslator<QueryVariant>
-		_legacyQueryTranslator;
-
-	@Reference(target = "(search.engine.impl=Elasticsearch)")
-	private PipelineAggregationTranslator<Aggregation>
-		_pipelineAggregationTranslator;
-
-	private final QueryTranslator<QueryVariant> _queryTranslator =
-		new com.liferay.portal.search.elasticsearch8.internal.query.
-			ElasticsearchQueryTranslator();
-
-	@Reference
-	private StatsTranslator _statsTranslator;
+	private final FacetTranslator _facetTranslator = new FacetTranslator();
+	private final StatsTranslator _statsTranslator = new StatsTranslator();
 
 }

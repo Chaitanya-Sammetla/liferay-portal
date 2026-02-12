@@ -81,7 +81,9 @@ test(
 			page.getByText('Maximum Number of Characters Exceeded')
 		).toBeVisible();
 
-		await structureBuilderPage.changeStructureSettings({name: 'CMSBlog'});
+		await structureBuilderPage.changeStructureSettings({
+			name: 'CMSBasicDocument',
+		});
 
 		await expect(
 			page.getByText('This name is already in use')
@@ -117,9 +119,26 @@ test(
 
 		await structureBuilderPage.changeFieldSettings({name: 'field'});
 
-		// Set label and empty name
+		// Set label for another language, publish and check an error is shown for the default language
 
 		await structureBuilderPage.selectStructure();
+
+		await structureBuilderPage.switchLanguage('es_ES');
+
+		await structureBuilderPage.changeStructureSettings({
+			label: 'Spanish label',
+		});
+
+		await clickAndExpectToBeVisible({
+			target: page.getByText(
+				'Please enter a valid label for the default language'
+			),
+			trigger: structureBuilderPage.publishButton,
+		});
+
+		// Set label and empty name
+
+		await structureBuilderPage.switchLanguage('en_US');
 
 		const label = `Structure${getRandomInt()}`;
 
@@ -132,9 +151,9 @@ test(
 
 		// Add a Single Select field and select it
 
-		await structureBuilderPage.addField('Single Select');
+		await structureBuilderPage.addField('Select from List');
 
-		await structureBuilderPage.selectFields([{label: 'Single Select'}]);
+		await structureBuilderPage.selectFields([{label: 'Select from List'}]);
 
 		// Put empty name
 
@@ -158,7 +177,7 @@ test(
 
 		await clickAndExpectToBeVisible({
 			target: page.locator('.breadcrumb-link', {
-				hasText: 'Single Select',
+				hasText: 'Select from List',
 			}),
 			trigger: structureBuilderPage.saveButton,
 		});
@@ -175,7 +194,7 @@ test(
 
 		await structureBuilderPage.selectFields([{label: 'Text'}]);
 
-		await structureBuilderPage.selectFields([{label: 'Single Select'}]);
+		await structureBuilderPage.selectFields([{label: 'Select from List'}]);
 
 		await expect(page.getByText(picklist.name)).toBeVisible();
 
@@ -234,9 +253,9 @@ test(
 
 		// Add a Single Select field and check for blur error
 
-		await structureBuilderPage.addField('Single Select');
+		await structureBuilderPage.addField('Select from List');
 
-		await structureBuilderPage.selectFields([{label: 'Single Select'}]);
+		await structureBuilderPage.selectFields([{label: 'Select from List'}]);
 
 		const picklistPicker = page.getByLabel('Picklist');
 
@@ -253,20 +272,6 @@ test(
 		});
 
 		await expect(errorMessage).not.toBeAttached();
-
-		// Add a Multiselect field and check for outside click error
-
-		await structureBuilderPage.addField('Multiselect');
-
-		await structureBuilderPage.selectFields([{label: 'Multiselect'}]);
-
-		await expect(errorMessage).not.toBeAttached();
-
-		await picklistPicker.click();
-
-		await page.getByText('Content Structure Fields').click();
-
-		await expect(errorMessage).toBeAttached();
 
 		// Delete picklist
 
@@ -400,5 +405,82 @@ test(
 				'Remember to review the customized editor if needed'
 			);
 		}).toPass();
+	}
+);
+
+test(
+	'Field deletion modal is shown when deleting published fields',
+	{
+		tag: '@LPD-65217',
+	},
+	async ({page, structureBuilderPage}) => {
+
+		// Create structure
+
+		await structureBuilderPage.createStructureFromData({
+			label: `StructureName${getRandomInt()}`,
+			page: structureBuilderPage,
+		});
+
+		// Add two fields
+
+		await structureBuilderPage.addField('Text');
+
+		await structureBuilderPage.addField('Numeric');
+
+		// Publish the structure
+
+		await structureBuilderPage.publishStructure();
+
+		// Try to delete both and check warning is shown
+
+		await structureBuilderPage.deleteFields(
+			[{label: 'Text'}, {label: 'Numeric'}],
+			{
+				confirm: false,
+			}
+		);
+
+		await expect(
+			page.getByText('Deleting fields may impact existing stored data')
+		).toBeVisible();
+
+		// Cancel deletion
+
+		const modal = page.locator('.modal-content', {
+			hasText: 'Delete Fields',
+		});
+
+		await clickAndExpectToBeHidden({
+			target: modal,
+			trigger: modal.getByText('Cancel', {exact: true}),
+		});
+
+		// Now delete one field and check option to not show it anymore
+
+		await structureBuilderPage.deleteFields([{label: 'Text'}], {
+			confirm: false,
+		});
+
+		await expect(
+			page.getByText('Deleting fields may impact existing stored data')
+		).toBeVisible();
+
+		await modal.getByText('Do not show me').check();
+
+		await clickAndExpectToBeHidden({
+			target: modal,
+			trigger: modal.getByText('Delete', {exact: true}),
+		});
+
+		// Now try to delete the other field and check modal is not shown anymore
+
+		await structureBuilderPage.deleteFields([{label: 'Numeric'}], {
+			confirm: false,
+		});
+
+		await page.waitForTimeout(2000);
+
+		await expect(modal).not.toBeVisible();
 	}
 );

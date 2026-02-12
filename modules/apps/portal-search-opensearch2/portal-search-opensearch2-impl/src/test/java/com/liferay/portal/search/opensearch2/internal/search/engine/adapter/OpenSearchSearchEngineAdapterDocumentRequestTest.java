@@ -33,12 +33,9 @@ import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRe
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentResponse;
 import com.liferay.portal.search.engine.adapter.document.UpdateDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.UpdateDocumentResponse;
-import com.liferay.portal.search.internal.script.ScriptsImpl;
 import com.liferay.portal.search.opensearch2.internal.BaseOpenSearchTestCase;
 import com.liferay.portal.search.opensearch2.internal.OpenSearchTestRule;
 import com.liferay.portal.search.opensearch2.internal.connection.OpenSearchConnectionManager;
-import com.liferay.portal.search.opensearch2.internal.document.OpenSearchDocumentFactory;
-import com.liferay.portal.search.opensearch2.internal.document.OpenSearchDocumentFactoryImpl;
 import com.liferay.portal.search.opensearch2.internal.search.engine.adapter.document.DocumentRequestExecutorFixture;
 import com.liferay.portal.search.opensearch2.internal.util.ConversionUtil;
 import com.liferay.portal.search.opensearch2.internal.util.IndexUtil;
@@ -564,7 +561,7 @@ public class OpenSearchSearchEngineAdapterDocumentRequestTest
 
 		UpdateDocumentResponse updateDocumentResponse =
 			_updateDocumentWithAdapter(
-				_scripts.script(
+				Scripts.INSTANCE.script(
 					StringBundler.concat(
 						"ctx._source.", _FIELD_NAME, "=\"false\" ")),
 				false, id);
@@ -586,7 +583,7 @@ public class OpenSearchSearchEngineAdapterDocumentRequestTest
 		String id = "1";
 
 		_updateDocumentWithAdapter(
-			_scripts.script(
+			Scripts.INSTANCE.script(
 				StringBundler.concat(
 					"ctx._source.", _FIELD_NAME, "=\"true\" ")),
 			true, id);
@@ -605,22 +602,18 @@ public class OpenSearchSearchEngineAdapterDocumentRequestTest
 
 		ReflectionTestUtil.setFieldValue(
 			searchEngineAdapter, "_documentRequestExecutor",
-			_createDocumentRequestExecutor(
-				openSearchConnectionManager,
-				new OpenSearchDocumentFactoryImpl()));
+			_createDocumentRequestExecutor(openSearchConnectionManager));
 
 		return searchEngineAdapter;
 	}
 
 	private static DocumentRequestExecutor _createDocumentRequestExecutor(
-		OpenSearchConnectionManager openSearchConnectionManager,
-		OpenSearchDocumentFactory openSearchDocumentFactory) {
+		OpenSearchConnectionManager openSearchConnectionManager) {
 
 		DocumentRequestExecutorFixture documentRequestExecutorFixture =
 			new DocumentRequestExecutorFixture() {
 				{
 					setOpenSearchConnectionManager(openSearchConnectionManager);
-					setOpenSearchDocumentFactory(openSearchDocumentFactory);
 				}
 			};
 
@@ -739,8 +732,6 @@ public class OpenSearchSearchEngineAdapterDocumentRequestTest
 	}
 
 	private static final String _FIELD_NAME = "matchDocument";
-
-	private static final Scripts _scripts = new ScriptsImpl();
 
 	private final DocumentFixture _documentFixture = new DocumentFixture();
 	private OpenSearchClient _openSearchClient;

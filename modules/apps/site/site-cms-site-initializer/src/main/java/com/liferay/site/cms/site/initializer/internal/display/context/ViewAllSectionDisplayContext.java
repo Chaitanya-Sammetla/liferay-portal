@@ -11,6 +11,7 @@ import com.liferay.frontend.data.set.SystemFDSEntry;
 import com.liferay.frontend.data.set.action.FDSCreationMenu;
 import com.liferay.frontend.data.set.action.FDSItemsActions;
 import com.liferay.frontend.data.set.model.FDSActionDropdownItem;
+import com.liferay.frontend.data.set.model.FDSActionDropdownItemBuilder;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.CreationMenu;
 import com.liferay.frontend.taglib.clay.servlet.taglib.util.DropdownItem;
 import com.liferay.object.model.ObjectEntryFolder;
@@ -79,6 +80,28 @@ public class ViewAllSectionDisplayContext extends BaseSectionDisplayContext {
 				StringPool.BLANK, "download", "download",
 				LanguageUtil.get(_httpServletRequest, "download"), null, null,
 				null));
+		fdsBulkActionDropdownItems.add(
+			new FDSActionDropdownItem(
+				null, "pencil", "edit-categories",
+				LanguageUtil.get(httpServletRequest, "edit-categories"), "post",
+				"edit-categories", null));
+		fdsBulkActionDropdownItems.add(
+			new FDSActionDropdownItem(
+				null, "pencil", "edit-tags",
+				LanguageUtil.get(httpServletRequest, "edit-tags"), "post",
+				"edit-tags", null));
+		fdsBulkActionDropdownItems.add(
+			FDSActionDropdownItemBuilder.setHighlighted(
+				true
+			).setHref(
+				"#"
+			).setIcon(
+				"time"
+			).setLabel(
+				LanguageUtil.get(_httpServletRequest, "expire")
+			).build(
+				"expire"
+			));
 		fdsBulkActionDropdownItems.add(
 			new FDSActionDropdownItem(
 				StringPool.BLANK, "password-policies", "permissions",

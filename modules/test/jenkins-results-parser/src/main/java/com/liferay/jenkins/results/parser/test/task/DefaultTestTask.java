@@ -5,13 +5,19 @@
 
 package com.liferay.jenkins.results.parser.test.task;
 
+import com.liferay.jenkins.results.parser.test.clazz.group.BatchTestClassGroup;
+import com.liferay.jenkins.results.parser.test.clazz.group.TestClassGroup;
+
 /**
  * @author Michael Hashimoto
  */
 public class DefaultTestTask extends BaseTestTask {
 
-	protected DefaultTestTask(long averageDuration, String name) {
-		super(averageDuration, name);
+	protected DefaultTestTask(
+		BatchTestClassGroup batchTestClassGroup,
+		TestClassGroup.GroupingStrategy groupingStrategy, String name) {
+
+		super(batchTestClassGroup, groupingStrategy, name);
 	}
 
 }

@@ -9,6 +9,7 @@ import com.liferay.account.service.AccountEntryLocalService;
 import com.liferay.account.service.AccountEntryOrganizationRelLocalService;
 import com.liferay.asset.kernel.service.AssetEntryLocalService;
 import com.liferay.asset.list.service.AssetListEntryLocalService;
+import com.liferay.document.library.kernel.service.DLFileEntryLocalService;
 import com.liferay.exportimport.kernel.empty.model.EmptyModelManager;
 import com.liferay.fragment.cache.FragmentEntryLinkCache;
 import com.liferay.fragment.model.FragmentEntryLink;
@@ -257,7 +258,7 @@ public class ObjectDefinitionLocalServiceImpl
 		return _addObjectDefinition(
 			externalReferenceCode, userId, objectFolderId, className, null,
 			enableComments, enableFormContainer, enableFriendlyURLCustomization,
-			enableIndexSearch, enableObjectEntryDraft,
+			enableIndexSearch, enableObjectEntryDraft, false,
 			enableObjectEntrySchedule, enableObjectEntrySubscription,
 			enableObjectEntryVersioning, friendlyURLSeparator, labelMap, true,
 			name, panelAppOrder, panelCategoryKey, null, null, pluralLabelMap,
@@ -372,8 +373,9 @@ public class ObjectDefinitionLocalServiceImpl
 				userId, objectFolderId,
 				systemObjectDefinitionManager.getModelClassName(),
 				table.getTableName(), false, false, false, true, false, false,
-				false, false, null, systemObjectDefinitionManager.getLabelMap(),
-				false, systemObjectDefinitionManager.getName(), null, null,
+				false, false, false, null,
+				systemObjectDefinitionManager.getLabelMap(), false,
+				systemObjectDefinitionManager.getName(), null, null,
 				primaryKeyColumn.getName(), primaryKeyColumn.getName(),
 				systemObjectDefinitionManager.getPluralLabelMap(), false,
 				systemObjectDefinitionManager.getScope(),
@@ -468,7 +470,7 @@ public class ObjectDefinitionLocalServiceImpl
 			String className, String dbTableName, boolean enableComments,
 			boolean enableFormContainer, boolean enableFriendlyURLCustomization,
 			boolean enableIndexSearch, boolean enableObjectEntryDraft,
-			boolean enableObjectEntrySchedule,
+			boolean enableObjectEntryHistory, boolean enableObjectEntrySchedule,
 			boolean enableObjectEntrySubscription,
 			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
 			Map<Locale, String> labelMap, boolean modifiable, String name,
@@ -494,14 +496,15 @@ public class ObjectDefinitionLocalServiceImpl
 			externalReferenceCode, userId, objectFolderId, className,
 			dbTableName, enableComments, enableFormContainer,
 			enableFriendlyURLCustomization, enableIndexSearch,
-			enableObjectEntryDraft, enableObjectEntrySchedule,
-			enableObjectEntrySubscription, enableObjectEntryVersioning,
-			friendlyURLSeparator, labelMap, modifiable, name, panelAppOrder,
-			panelCategoryKey, pkObjectFieldDBColumnName, pkObjectFieldName,
-			pluralLabelMap, portlet, scope,
-			ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT, true,
-			titleObjectFieldName, version, status, objectDefinitionSettings,
-			objectFields, workflowDefinitionLinks, new ServiceContext());
+			enableObjectEntryDraft, enableObjectEntryHistory,
+			enableObjectEntrySchedule, enableObjectEntrySubscription,
+			enableObjectEntryVersioning, friendlyURLSeparator, labelMap,
+			modifiable, name, panelAppOrder, panelCategoryKey,
+			pkObjectFieldDBColumnName, pkObjectFieldName, pluralLabelMap,
+			portlet, scope, ObjectDefinitionConstants.STORAGE_TYPE_DEFAULT,
+			true, titleObjectFieldName, version, status,
+			objectDefinitionSettings, objectFields, workflowDefinitionLinks,
+			new ServiceContext());
 	}
 
 	@Override
@@ -1032,7 +1035,8 @@ public class ObjectDefinitionLocalServiceImpl
 				scope, system),
 			externalReferenceCode,
 			this::fetchObjectDefinitionByExternalReferenceCode,
-			this::getObjectDefinitionByExternalReferenceCode);
+			this::getObjectDefinitionByExternalReferenceCode,
+			ObjectDefinition.class.getName());
 	}
 
 	@Override
@@ -1105,6 +1109,7 @@ public class ObjectDefinitionLocalServiceImpl
 				_accountEntryLocalService,
 				_accountEntryOrganizationRelLocalService,
 				_assetEntryLocalService, _bundleContext,
+				_dlFileEntryLocalService,
 				_dynamicQueryBatchIndexingActionableFactory, _groupLocalService,
 				_kaleoDefinitionLocalService, _listTypeLocalService,
 				_objectActionLocalService, objectDefinitionLocalService,
@@ -1496,7 +1501,7 @@ public class ObjectDefinitionLocalServiceImpl
 			String className, String dbTableName, boolean enableComments,
 			boolean enableFormContainer, boolean enableFriendlyURLCustomization,
 			boolean enableIndexSearch, boolean enableObjectEntryDraft,
-			boolean enableObjectEntrySchedule,
+			boolean enableObjectEntryHistory, boolean enableObjectEntrySchedule,
 			boolean enableObjectEntrySubscription,
 			boolean enableObjectEntryVersioning, String friendlyURLSeparator,
 			Map<Locale, String> labelMap, boolean modifiable, String name,
@@ -1543,6 +1548,8 @@ public class ObjectDefinitionLocalServiceImpl
 		_validateEnableFriendlyURLCustomization(
 			enableFriendlyURLCustomization, friendlyURLSeparator, modifiable,
 			storageType, system);
+		_validateEnableObjectEntryHistory(
+			enableObjectEntryHistory, modifiable, storageType, system);
 		_validateEnableObjectEntrySchedule(
 			enableObjectEntrySchedule, modifiable, null, system);
 		_validateEnableObjectEntrySubscription(
@@ -1582,6 +1589,7 @@ public class ObjectDefinitionLocalServiceImpl
 			enableFriendlyURLCustomization);
 		objectDefinition.setEnableIndexSearch(enableIndexSearch);
 		objectDefinition.setEnableObjectEntryDraft(enableObjectEntryDraft);
+		objectDefinition.setEnableObjectEntryHistory(enableObjectEntryHistory);
 
 		if (FeatureFlagManagerUtil.isEnabled(
 				user.getCompanyId(), "LPD-17564")) {
@@ -1631,6 +1639,24 @@ public class ObjectDefinitionLocalServiceImpl
 			addOrUpdateObjectDefinitionPLOEntries(objectDefinition);
 
 			dbTableName = "ObjectEntry";
+		}
+
+		if (Validator.isNotNull(className) &&
+			!StringUtil.equals(className, objectDefinition.getClassName())) {
+
+			_objectDefinitionSettingLocalService.addObjectDefinitionSetting(
+				objectDefinition.getUserId(),
+				objectDefinition.getObjectDefinitionId(),
+				ObjectDefinitionSettingConstants.NAME_OLD_CLASS_NAME,
+				className);
+
+			for (long classNameId : _getClassNameIds(className)) {
+				_objectDefinitionSettingLocalService.addObjectDefinitionSetting(
+					objectDefinition.getUserId(),
+					objectDefinition.getObjectDefinitionId(),
+					ObjectDefinitionSettingConstants.NAME_OLD_CLASS_NAME_ID,
+					String.valueOf(classNameId));
+			}
 		}
 
 		_addOrUpdateObjectDefinitionSettings(
@@ -2241,6 +2267,27 @@ public class ObjectDefinitionLocalServiceImpl
 				return sb.toString();
 			}
 		}
+	}
+
+	private Set<Long> _getClassNameIds(String className) {
+		Set<Long> classNameIds = new HashSet<>();
+
+		_companyLocalService.forEachCompanyId(
+			companyId -> {
+				ObjectDefinition objectDefinition =
+					objectDefinitionPersistence.fetchByC_C(
+						companyId, className);
+
+				if ((objectDefinition != null) &&
+					objectDefinition.isApproved()) {
+
+					classNameIds.add(
+						_classNameLocalService.getClassNameId(
+							objectDefinition.getClassName()));
+				}
+			});
+
+		return classNameIds;
 	}
 
 	private String _getDBTableName(
@@ -3172,8 +3219,8 @@ public class ObjectDefinitionLocalServiceImpl
 		if (_isUnmodifiableSystemObject(modifiable, system)) {
 			_handleException(
 				new ObjectDefinitionEnableObjectEntryHistoryException(
-					"Enable object entry history is not allowed for system " +
-						"object definitions"),
+					"Enable object entry history is not allowed for " +
+						"unmodifiable system object definitions"),
 				"enableObjectEntryHistoryChanged", true);
 		}
 
@@ -3758,6 +3805,9 @@ public class ObjectDefinitionLocalServiceImpl
 
 	@Reference
 	private CurrentConnection _currentConnection;
+
+	@Reference
+	private DLFileEntryLocalService _dlFileEntryLocalService;
 
 	@Reference
 	private DynamicQueryBatchIndexingActionableFactory

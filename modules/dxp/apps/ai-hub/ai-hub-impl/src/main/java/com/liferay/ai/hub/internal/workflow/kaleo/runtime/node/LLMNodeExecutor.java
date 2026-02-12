@@ -9,12 +9,18 @@ import com.liferay.ai.hub.internal.assistant.handler.AssistantHandlerContext;
 import com.liferay.ai.hub.internal.assistant.handler.AssistantHandlerUtil;
 import com.liferay.ai.hub.internal.mcp.tool.provider.MCPToolProviderUtil;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.ContentRetrieverUtil;
-import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.InputVariablesUtil;
+import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.KaleoLogUtil;
 import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.ToolsUtil;
+import com.liferay.ai.hub.internal.workflow.kaleo.runtime.node.util.VariablesUtil;
+import com.liferay.ai.hub.rest.resource.v1_0.util.SseUtil;
 import com.liferay.object.constants.ObjectDefinitionConstants;
 import com.liferay.object.rest.manager.v1_0.ObjectEntryManager;
+import com.liferay.petra.lang.SafeCloseable;
 import com.liferay.portal.kernel.exception.PortalException;
+import com.liferay.portal.kernel.json.JSONArray;
 import com.liferay.portal.kernel.json.JSONFactory;
+import com.liferay.portal.kernel.json.JSONObject;
+import com.liferay.portal.kernel.security.auth.CompanyThreadLocal;
 import com.liferay.portal.kernel.security.permission.PermissionThreadLocal;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.util.GetterUtil;
@@ -42,7 +48,6 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.BiConsumer;
 
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
@@ -71,6 +76,7 @@ public class LLMNodeExecutor extends BaseNodeExecutor {
 			List<PathElement> remainingPathElements)
 		throws PortalException {
 
+		long companyId = CompanyThreadLocal.getCompanyId();
 		KaleoInstanceToken kaleoInstanceToken =
 			executionContext.getKaleoInstanceToken();
 
@@ -84,6 +90,11 @@ public class LLMNodeExecutor extends BaseNodeExecutor {
 			kaleoNodeSettingValues.put(
 				kaleoNodeSetting.getName(), kaleoNodeSetting.getValue());
 		}
+
+		String prompt = VariablesUtil.applyInputVariables(
+			executionContext, "prompt", kaleoNodeSettingValues);
+		String userMessage = VariablesUtil.applyInputVariables(
+			executionContext, "userMessage", kaleoNodeSettingValues);
 
 		ServiceContext serviceContext = executionContext.getServiceContext();
 
@@ -104,7 +115,9 @@ public class LLMNodeExecutor extends BaseNodeExecutor {
 			AssistantHandlerContext.builder(
 			).contentRetriever(
 				ContentRetrieverUtil.createContentRetriever(
-					kaleoNodeSettingValues)
+					GetterUtil.getString(workflowContext.get("accessToken")),
+					kaleoNodeSettingValues,
+					GetterUtil.getString(workflowContext.get("userToken")))
 			).invocationParameters(
 				InvocationParameters.from(
 					Map.of(
@@ -113,15 +126,15 @@ public class LLMNodeExecutor extends BaseNodeExecutor {
 						PermissionThreadLocal.getPermissionChecker()))
 			).memoryId(
 				GetterUtil.getString(workflowContext.get("memoryId"))
-			).onCompleteResponse(
+			).onCompleteResponseConsumer(
 				response -> _completeResponse(
-					response, executionContext, currentKaleoNode,
+					response, companyId, executionContext, currentKaleoNode,
+					kaleoNodeSettingValues, prompt, userMessage,
 					vertexAiGeminiStreamingChatModel)
-			).onError(
+			).onErrorConsumer(
 				throwable -> vertexAiGeminiStreamingChatModel.close()
-			).systemMessageProvider(
-				object -> InputVariablesUtil.applyInputVariables(
-					executionContext, "prompt", kaleoNodeSettingValues)
+			).systemMessageProviderFunction(
+				memoryId -> prompt
 			).toolProvider(
 				MCPToolProviderUtil.create(
 					kaleoInstanceToken.getCompanyId(), _dtoConverterRegistry,
@@ -130,13 +143,10 @@ public class LLMNodeExecutor extends BaseNodeExecutor {
 						_jsonFactory, kaleoNodeSettingValues),
 					_objectEntryManager, serviceContext.getUserId())
 			).userMessage(
-				InputVariablesUtil.applyInputVariables(
-					executionContext, "userMessage", kaleoNodeSettingValues)
+				userMessage
 			).vertexAiGeminiStreamingChatModel(
 				vertexAiGeminiStreamingChatModel
-			).build(),
-			GetterUtil.getString(
-				workflowContext.get("assistantKey"), "default"));
+			).build());
 	}
 
 	@Override
@@ -165,25 +175,44 @@ public class LLMNodeExecutor extends BaseNodeExecutor {
 	}
 
 	private void _completeResponse(
-		ChatResponse chatResponse, ExecutionContext executionContext,
-		KaleoNode kaleoNode,
+		ChatResponse chatResponse, long companyId,
+		ExecutionContext executionContext, KaleoNode kaleoNode,
+		Map<String, String> kaleoNodeSettingValues, String prompt,
+		String userMessage,
 		VertexAiGeminiStreamingChatModel vertexAiGeminiStreamingChatModel) {
 
-		try {
+		try (SafeCloseable safeCloseable =
+				CompanyThreadLocal.setCompanyIdWithSafeCloseable(companyId)) {
+
 			Map<String, Serializable> workflowContext =
 				executionContext.getWorkflowContext();
 
-			BiConsumer<String, String> biConsumer =
-				(BiConsumer)workflowContext.get("sendOutBoundEvent");
-
 			AiMessage aiMessage = chatResponse.aiMessage();
 
-			biConsumer.accept(
+			JSONArray jsonArray = VariablesUtil.getVariablesJSONArray(
+				"outputVariables", kaleoNodeSettingValues);
+
+			if ((jsonArray != null) && (jsonArray.length() > 0)) {
+				JSONObject jsonObject = jsonArray.getJSONObject(0);
+
+				workflowContext.put(
+					jsonObject.getString("name"), aiMessage.text());
+			}
+
+			workflowContext.put("output", aiMessage.text());
+
+			SseUtil.send(
 				aiMessage.text(),
-				GetterUtil.getString(workflowContext.get("outBoundEventName")));
+				GetterUtil.getString(workflowContext.get("outBoundEventName")),
+				kaleoNode.getName(),
+				GetterUtil.getString(workflowContext.get("sseEventSinkKey")));
 
 			KaleoInstanceToken kaleoInstanceToken =
 				executionContext.getKaleoInstanceToken();
+
+			KaleoLogUtil.addNodeUsageKaleoLog(
+				chatResponse, kaleoInstanceToken, aiMessage.text(), prompt,
+				executionContext.getServiceContext(), userMessage);
 
 			List<KaleoTransition> kaleoTransitions =
 				kaleoNode.getKaleoTransitions();

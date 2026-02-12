@@ -5,18 +5,12 @@
 
 package com.liferay.portal.search.opensearch2.internal.search.engine.adapter.search;
 
-import com.liferay.portal.kernel.module.util.SystemBundleUtil;
-import com.liferay.portal.kernel.search.query.QueryTranslator;
 import com.liferay.portal.kernel.test.ReflectionTestUtil;
-import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.search.engine.adapter.search.SearchRequestExecutor;
 import com.liferay.portal.search.filter.ComplexQueryBuilderFactory;
 import com.liferay.portal.search.internal.aggregation.AggregationResultsImpl;
 import com.liferay.portal.search.internal.document.DocumentBuilderFactoryImpl;
-import com.liferay.portal.search.internal.facet.ModifiedFacetImpl;
-import com.liferay.portal.search.internal.facet.NestedFacetImpl;
 import com.liferay.portal.search.internal.filter.ComplexQueryBuilderFactoryImpl;
-import com.liferay.portal.search.internal.geolocation.GeoBuildersImpl;
 import com.liferay.portal.search.internal.groupby.GroupByResponseFactoryImpl;
 import com.liferay.portal.search.internal.highlight.HighlightFieldBuilderFactoryImpl;
 import com.liferay.portal.search.internal.hits.SearchHitBuilderFactoryImpl;
@@ -25,37 +19,13 @@ import com.liferay.portal.search.internal.legacy.groupby.GroupByRequestFactoryIm
 import com.liferay.portal.search.internal.legacy.stats.StatsRequestBuilderFactoryImpl;
 import com.liferay.portal.search.internal.legacy.stats.StatsResultsTranslatorImpl;
 import com.liferay.portal.search.internal.query.QueriesImpl;
-import com.liferay.portal.search.internal.stats.StatsResponseBuilderFactoryImpl;
 import com.liferay.portal.search.legacy.stats.StatsRequestBuilderFactory;
-import com.liferay.portal.search.opensearch2.internal.aggregation.OpenSearchAggregationTranslatorFixture;
-import com.liferay.portal.search.opensearch2.internal.aggregation.OpenSearchPipelineAggregationTranslatorFixture;
 import com.liferay.portal.search.opensearch2.internal.connection.OpenSearchConnectionManager;
-import com.liferay.portal.search.opensearch2.internal.facet.FacetProcessor;
 import com.liferay.portal.search.opensearch2.internal.facet.FacetTranslator;
-import com.liferay.portal.search.opensearch2.internal.facet.FacetTranslatorImpl;
-import com.liferay.portal.search.opensearch2.internal.facet.NestedFacetProcessor;
-import com.liferay.portal.search.opensearch2.internal.facet.RangeFacetProcessor;
-import com.liferay.portal.search.opensearch2.internal.filter.OpenSearchFilterTranslatorFixture;
 import com.liferay.portal.search.opensearch2.internal.highlight.HighlightTranslator;
-import com.liferay.portal.search.opensearch2.internal.legacy.hits.HitDocumentTranslatorImpl;
-import com.liferay.portal.search.opensearch2.internal.query.OpenSearchQueryTranslator;
-import com.liferay.portal.search.opensearch2.internal.query.OpenSearchQueryTranslatorFixture;
 import com.liferay.portal.search.opensearch2.internal.search.response.SearchResponseTranslator;
-import com.liferay.portal.search.opensearch2.internal.sort.OpenSearchSortFieldTranslator;
-import com.liferay.portal.search.opensearch2.internal.sort.OpenSearchSortFieldTranslatorFixture;
-import com.liferay.portal.search.opensearch2.internal.stats.StatsTranslator;
-import com.liferay.portal.search.opensearch2.internal.stats.StatsTranslatorImpl;
 import com.liferay.portal.search.opensearch2.internal.suggest.OpenSearchSuggesterTranslator;
 import com.liferay.portal.search.query.Queries;
-
-import java.util.ArrayList;
-import java.util.List;
-
-import org.opensearch.client.opensearch._types.query_dsl.QueryVariant;
-import org.opensearch.client.opensearch.core.SearchRequest;
-
-import org.osgi.framework.BundleContext;
-import org.osgi.framework.ServiceRegistration;
 
 /**
  * @author Michael C. Han
@@ -68,108 +38,25 @@ public class SearchRequestExecutorFixture {
 	}
 
 	public void setUp() {
-		OpenSearchQueryTranslatorFixture openSearchQueryTranslatorFixture =
-			new OpenSearchQueryTranslatorFixture();
-
-		OpenSearchQueryTranslator openSearchQueryTranslator =
-			openSearchQueryTranslatorFixture.getOpenSearchQueryTranslator();
-
-		OpenSearchSortFieldTranslatorFixture
-			openSearchSortFieldTranslatorFixture =
-				new OpenSearchSortFieldTranslatorFixture(
-					openSearchQueryTranslator);
-
-		StatsTranslator statsTranslator = new StatsTranslatorImpl();
-
-		ReflectionTestUtil.setFieldValue(
-			statsTranslator, "_statsResponseBuilderFactory",
-			new StatsResponseBuilderFactoryImpl());
-
 		_searchRequestExecutor = _createSearchRequestExecutor(
 			createComplexQueryBuilderFactory(new QueriesImpl()),
-			_facetProcessor, _openSearchConnectionManager,
-			openSearchQueryTranslator,
-			openSearchSortFieldTranslatorFixture.
-				getOpenSearchSortFieldTranslator(),
-			new StatsRequestBuilderFactoryImpl(), statsTranslator);
-	}
-
-	public void tearDown() {
-		_serviceRegistrations.forEach(
-			serviceRegistration -> serviceRegistration.unregister());
-
-		ReflectionTestUtil.invoke(
-			_facetTranslatorImpl, "deactivate", new Class<?>[0]);
+			_openSearchConnectionManager, new StatsRequestBuilderFactoryImpl());
 	}
 
 	protected static CommonSearchRequestBuilderAssembler
 		createCommonSearchRequestBuilderAssembler(
-			ComplexQueryBuilderFactory complexQueryBuilderFactory,
-			FacetProcessor<?> facetProcessor,
-			OpenSearchQueryTranslator openSearchQueryTranslator,
-			StatsTranslator statsTranslator) {
+			ComplexQueryBuilderFactory complexQueryBuilderFactory) {
 
 		CommonSearchRequestBuilderAssembler
 			commonSearchRequestBuilderAssembler =
 				new CommonSearchRequestBuilderAssemblerImpl();
 
-		OpenSearchAggregationTranslatorFixture
-			openSearchAggregationTranslatorFixture =
-				new OpenSearchAggregationTranslatorFixture();
-
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_aggregationTranslator",
-			openSearchAggregationTranslatorFixture.
-				getOpenSearchAggregationTranslator());
-
 		ReflectionTestUtil.setFieldValue(
 			commonSearchRequestBuilderAssembler, "_complexQueryBuilderFactory",
 			complexQueryBuilderFactory);
-
-		com.liferay.portal.search.opensearch2.internal.legacy.query.
-			OpenSearchQueryTranslatorFixture
-				legacyOpenSearchQueryTranslatorFixture =
-					new com.liferay.portal.search.opensearch2.internal.legacy.
-						query.OpenSearchQueryTranslatorFixture();
-
-		com.liferay.portal.search.opensearch2.internal.legacy.query.
-			OpenSearchQueryTranslator legacyOpenSearchQueryTranslator =
-				legacyOpenSearchQueryTranslatorFixture.
-					getOpenSearchQueryTranslator();
-
 		ReflectionTestUtil.setFieldValue(
 			commonSearchRequestBuilderAssembler, "_facetTranslator",
-			_createFacetTranslator(
-				facetProcessor, legacyOpenSearchQueryTranslator));
-
-		OpenSearchFilterTranslatorFixture openSearchFilterTranslatorFixture =
-			new OpenSearchFilterTranslatorFixture(
-				legacyOpenSearchQueryTranslator);
-
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_filterTranslator",
-			openSearchFilterTranslatorFixture.getOpenSearchFilterTranslator());
-
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_legacyQueryTranslator",
-			legacyOpenSearchQueryTranslator);
-
-		OpenSearchPipelineAggregationTranslatorFixture
-			openSearchPipelineAggregationTranslatorFixture =
-				new OpenSearchPipelineAggregationTranslatorFixture();
-
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler,
-			"_pipelineAggregationTranslator",
-			openSearchPipelineAggregationTranslatorFixture.
-				getOpenSearchPipelineAggregationTranslator());
-
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_queryTranslator",
-			openSearchQueryTranslator);
-		ReflectionTestUtil.setFieldValue(
-			commonSearchRequestBuilderAssembler, "_statsTranslator",
-			statsTranslator);
+			new FacetTranslator());
 
 		return commonSearchRequestBuilderAssembler;
 	}
@@ -186,57 +73,10 @@ public class SearchRequestExecutorFixture {
 		return complexQueryBuilderFactoryImpl;
 	}
 
-	protected void setFacetProcessor(FacetProcessor<?> facetProcessor) {
-		_facetProcessor = facetProcessor;
-	}
-
 	protected void setOpenSearchConnectionManager(
 		OpenSearchConnectionManager openSearchConnectionManager) {
 
 		_openSearchConnectionManager = openSearchConnectionManager;
-	}
-
-	private static FacetTranslator _createFacetTranslator(
-		FacetProcessor<?> facetProcessor,
-		QueryTranslator<QueryVariant> queryTranslator) {
-
-		_facetTranslatorImpl = new FacetTranslatorImpl();
-
-		ReflectionTestUtil.invoke(
-			_facetTranslatorImpl, "activate",
-			new Class<?>[] {BundleContext.class}, _bundleContext);
-
-		if (facetProcessor != null) {
-			ReflectionTestUtil.setFieldValue(
-				_facetTranslatorImpl, "_defaultFacetProcessor",
-				(FacetProcessor<SearchRequest.Builder>)facetProcessor);
-		}
-		else {
-			_serviceRegistrations.add(
-				_bundleContext.registerService(
-					(Class<FacetProcessor<SearchRequest.Builder>>)
-						(Class<?>)FacetProcessor.class,
-					new RangeFacetProcessor(),
-					MapUtil.singletonDictionary(
-						"class.name", ModifiedFacetImpl.class.getName())));
-
-			_serviceRegistrations.add(
-				_bundleContext.registerService(
-					(Class<FacetProcessor<SearchRequest.Builder>>)
-						(Class<?>)FacetProcessor.class,
-					new NestedFacetProcessor(),
-					MapUtil.singletonDictionary(
-						"class.name", NestedFacetImpl.class.getName())));
-		}
-
-		OpenSearchFilterTranslatorFixture openSearchFilterTranslatorFixture =
-			new OpenSearchFilterTranslatorFixture(queryTranslator);
-
-		ReflectionTestUtil.setFieldValue(
-			_facetTranslatorImpl, "_filterTranslator",
-			openSearchFilterTranslatorFixture.getOpenSearchFilterTranslator());
-
-		return _facetTranslatorImpl;
 	}
 
 	private ClosePointInTimeRequestExecutor
@@ -255,24 +95,14 @@ public class SearchRequestExecutorFixture {
 
 	private CountSearchRequestExecutor _createCountSearchRequestExecutor(
 		CommonSearchRequestBuilderAssembler commonSearchRequestBuilderAssembler,
-		OpenSearchConnectionManager openSearchConnectionManager,
-		StatsTranslator statsTranslator) {
+		OpenSearchConnectionManager openSearchConnectionManager) {
 
 		CountSearchRequestExecutor countSearchRequestExecutor =
 			new CountSearchRequestExecutorImpl();
 
-		CommonSearchResponseAssembler commonSearchResponseAssembler =
-			new CommonSearchResponseAssemblerImpl();
-
-		ReflectionTestUtil.setFieldValue(
-			commonSearchResponseAssembler, "_statsTranslator", statsTranslator);
-
 		ReflectionTestUtil.setFieldValue(
 			countSearchRequestExecutor, "_commonSearchRequestBuilderAssembler",
 			commonSearchRequestBuilderAssembler);
-		ReflectionTestUtil.setFieldValue(
-			countSearchRequestExecutor, "_commonSearchResponseAssembler",
-			commonSearchResponseAssembler);
 		ReflectionTestUtil.setFieldValue(
 			countSearchRequestExecutor, "_openSearchConnectionManager",
 			openSearchConnectionManager);
@@ -318,12 +148,8 @@ public class SearchRequestExecutorFixture {
 
 	private SearchRequestExecutor _createSearchRequestExecutor(
 		ComplexQueryBuilderFactory complexQueryBuilderFactory,
-		FacetProcessor<?> facetProcessor,
 		OpenSearchConnectionManager openSearchConnectionManager,
-		OpenSearchQueryTranslator openSearchQueryTranslator,
-		OpenSearchSortFieldTranslator openSearchSortFieldTranslator,
-		StatsRequestBuilderFactory statsRequestBuilderFactory,
-		StatsTranslator statsTranslator) {
+		StatsRequestBuilderFactory statsRequestBuilderFactory) {
 
 		SearchRequestExecutor searchRequestExecutor =
 			new OpenSearchSearchRequestExecutor();
@@ -336,24 +162,21 @@ public class SearchRequestExecutorFixture {
 		CommonSearchRequestBuilderAssembler
 			commonSearchRequestBuilderAssembler =
 				createCommonSearchRequestBuilderAssembler(
-					complexQueryBuilderFactory, facetProcessor,
-					openSearchQueryTranslator, statsTranslator);
+					complexQueryBuilderFactory);
 
 		ReflectionTestUtil.setFieldValue(
 			searchRequestExecutor, "_countSearchRequestExecutor",
 			_createCountSearchRequestExecutor(
 				commonSearchRequestBuilderAssembler,
-				openSearchConnectionManager, statsTranslator));
+				openSearchConnectionManager));
 
 		SearchSearchRequestAssembler searchSearchRequestAssembler =
 			_createSearchSearchRequestAssembler(
-				commonSearchRequestBuilderAssembler, openSearchQueryTranslator,
-				openSearchSortFieldTranslator, statsRequestBuilderFactory,
-				statsTranslator);
+				commonSearchRequestBuilderAssembler,
+				statsRequestBuilderFactory);
 
 		SearchSearchResponseAssembler searchSearchResponseAssembler =
-			_createSearchSearchResponseAssembler(
-				statsRequestBuilderFactory, statsTranslator);
+			_createSearchSearchResponseAssembler(statsRequestBuilderFactory);
 
 		ReflectionTestUtil.setFieldValue(
 			searchRequestExecutor, "_multisearchSearchRequestExecutor",
@@ -378,10 +201,7 @@ public class SearchRequestExecutorFixture {
 
 	private SearchSearchRequestAssembler _createSearchSearchRequestAssembler(
 		CommonSearchRequestBuilderAssembler commonSearchRequestBuilderAssembler,
-		OpenSearchQueryTranslator openSearchQueryTranslator,
-		OpenSearchSortFieldTranslator openSearchSortFieldTranslator,
-		StatsRequestBuilderFactory statsRequestBuilderFactory,
-		StatsTranslator statsTranslator) {
+		StatsRequestBuilderFactory statsRequestBuilderFactory) {
 
 		SearchSearchRequestAssembler searchSearchRequestAssembler =
 			new SearchSearchRequestAssemblerImpl();
@@ -397,16 +217,8 @@ public class SearchRequestExecutorFixture {
 			searchSearchRequestAssembler, "_highlightTranslator",
 			new HighlightTranslator());
 		ReflectionTestUtil.setFieldValue(
-			searchSearchRequestAssembler, "_queryTranslator",
-			openSearchQueryTranslator);
-		ReflectionTestUtil.setFieldValue(
-			searchSearchRequestAssembler, "_sortFieldTranslator",
-			openSearchSortFieldTranslator);
-		ReflectionTestUtil.setFieldValue(
 			searchSearchRequestAssembler, "_statsRequestBuilderFactory",
 			statsRequestBuilderFactory);
-		ReflectionTestUtil.setFieldValue(
-			searchSearchRequestAssembler, "_statsTranslator", statsTranslator);
 
 		return searchSearchRequestAssembler;
 	}
@@ -433,30 +245,17 @@ public class SearchRequestExecutorFixture {
 	}
 
 	private SearchSearchResponseAssembler _createSearchSearchResponseAssembler(
-		StatsRequestBuilderFactory statsRequestBuilderFactory,
-		StatsTranslator statsTranslator) {
+		StatsRequestBuilderFactory statsRequestBuilderFactory) {
 
 		SearchSearchResponseAssembler searchSearchResponseAssembler =
 			new SearchSearchResponseAssemblerImpl();
-
-		CommonSearchResponseAssembler commonSearchResponseAssembler =
-			new CommonSearchResponseAssemblerImpl();
-
-		ReflectionTestUtil.setFieldValue(
-			commonSearchResponseAssembler, "_statsTranslator", statsTranslator);
 
 		ReflectionTestUtil.setFieldValue(
 			searchSearchResponseAssembler, "_aggregationResults",
 			new AggregationResultsImpl());
 		ReflectionTestUtil.setFieldValue(
-			searchSearchResponseAssembler, "_commonSearchResponseAssembler",
-			commonSearchResponseAssembler);
-		ReflectionTestUtil.setFieldValue(
 			searchSearchResponseAssembler, "_documentBuilderFactory",
 			new DocumentBuilderFactoryImpl());
-		ReflectionTestUtil.setFieldValue(
-			searchSearchResponseAssembler, "_geoBuilders",
-			new GeoBuildersImpl());
 		ReflectionTestUtil.setFieldValue(
 			searchSearchResponseAssembler, "_highlightFieldBuilderFactory",
 			new HighlightFieldBuilderFactoryImpl());
@@ -469,9 +268,8 @@ public class SearchRequestExecutorFixture {
 		ReflectionTestUtil.setFieldValue(
 			searchSearchResponseAssembler, "_searchResponseTranslator",
 			new SearchResponseTranslator(
-				new GroupByResponseFactoryImpl(),
-				new HitDocumentTranslatorImpl(), statsRequestBuilderFactory,
-				new StatsResultsTranslatorImpl(), statsTranslator));
+				new GroupByResponseFactoryImpl(), statsRequestBuilderFactory,
+				new StatsResultsTranslatorImpl()));
 
 		return searchSearchResponseAssembler;
 	}
@@ -488,19 +286,11 @@ public class SearchRequestExecutorFixture {
 
 		ReflectionTestUtil.setFieldValue(
 			suggestSearchRequestExecutor, "_suggesterTranslator",
-			new OpenSearchSuggesterTranslator(null));
+			new OpenSearchSuggesterTranslator());
 
 		return suggestSearchRequestExecutor;
 	}
 
-	private static final BundleContext _bundleContext =
-		SystemBundleUtil.getBundleContext();
-	private static FacetTranslatorImpl _facetTranslatorImpl;
-	private static final List
-		<ServiceRegistration<FacetProcessor<SearchRequest.Builder>>>
-			_serviceRegistrations = new ArrayList<>();
-
-	private FacetProcessor<?> _facetProcessor;
 	private OpenSearchConnectionManager _openSearchConnectionManager;
 	private SearchRequestExecutor _searchRequestExecutor;
 

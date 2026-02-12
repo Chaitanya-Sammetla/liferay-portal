@@ -56,8 +56,10 @@ public class CountSearchRequestExecutorImpl
 					DebugStringsUtil.getStackTraceString()));
 		}
 
+		SearchRequest searchRequest = builder.build();
+
 		String searchRequestString = DebugStringsUtil.getSearchRequestString(
-			builder);
+			searchRequest);
 
 		if (_log.isDebugEnabled()) {
 			_log.debug(
@@ -68,8 +70,6 @@ public class CountSearchRequestExecutorImpl
 
 		CountSearchResponse countSearchResponse = new CountSearchResponse();
 
-		SearchRequest searchRequest = builder.build();
-
 		SearchResponse<JsonData> searchResponse = getSearchResponse(
 			countSearchRequest, searchRequest);
 
@@ -79,7 +79,7 @@ public class CountSearchRequestExecutorImpl
 
 		countSearchResponse.setCount(totalHits.value());
 
-		_commonSearchResponseAssembler.assemble(
+		CommonSearchResponseAssembler.INSTANCE.assemble(
 			countSearchRequest, countSearchResponse, searchResponse,
 			searchRequestString);
 
@@ -115,9 +115,6 @@ public class CountSearchRequestExecutorImpl
 	@Reference
 	private CommonSearchRequestBuilderAssembler
 		_commonSearchRequestBuilderAssembler;
-
-	@Reference
-	private CommonSearchResponseAssembler _commonSearchResponseAssembler;
 
 	@Reference
 	private ElasticsearchClientResolver _elasticsearchClientResolver;

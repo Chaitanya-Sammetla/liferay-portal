@@ -9,7 +9,6 @@ import com.liferay.portal.search.document.DocumentBuilder;
 import com.liferay.portal.search.document.DocumentBuilderFactory;
 import com.liferay.portal.search.engine.adapter.document.GetDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.GetDocumentResponse;
-import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.opensearch2.internal.connection.OpenSearchConnectionManager;
 import com.liferay.portal.search.opensearch2.internal.hits.FieldsTranslator;
 
@@ -35,7 +34,8 @@ public class GetDocumentRequestExecutorImpl
 	public GetDocumentResponse execute(GetDocumentRequest getDocumentRequest) {
 		GetResponse<JsonData> getResponse = _getGetResponse(
 			getDocumentRequest,
-			_openSearchDocumentRequestTranslator.translate(getDocumentRequest));
+			OpenSearchDocumentRequestTranslatorUtil.translate(
+				getDocumentRequest));
 
 		GetDocumentResponse getDocumentResponse = new GetDocumentResponse(
 			getResponse.found());
@@ -48,7 +48,7 @@ public class GetDocumentRequestExecutorImpl
 
 		JsonData jsonData = getResponse.source();
 
-		FieldsTranslator fieldsTranslator = new FieldsTranslator(_geoBuilders);
+		FieldsTranslator fieldsTranslator = new FieldsTranslator();
 
 		fieldsTranslator.translateSource(documentBuilder, jsonData);
 
@@ -79,13 +79,6 @@ public class GetDocumentRequestExecutorImpl
 	private DocumentBuilderFactory _documentBuilderFactory;
 
 	@Reference
-	private GeoBuilders _geoBuilders;
-
-	@Reference
 	private OpenSearchConnectionManager _openSearchConnectionManager;
-
-	@Reference
-	private OpenSearchDocumentRequestTranslator
-		_openSearchDocumentRequestTranslator;
 
 }

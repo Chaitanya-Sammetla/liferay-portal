@@ -548,6 +548,7 @@
 		<check name="JavaDocumentAddCallsOrderCheck">
 			<category name="Styling" />
 			<description name="Sorts `add*` calls for type `Document`." />
+			<property name="enabled" value="false" />
 		</check>
 		<check name="JavaDuplicateVariableCheck">
 			<category name="Miscellaneous" />
@@ -845,6 +846,11 @@
 			<category name="Bug Prevention" />
 			<description name="Performs several checks on `*JSPDynamicInclude` class." />
 		</check>
+		<check name="JavaLiferayFilterCheck">
+			<category name="Bug Prevention" />
+			<description name="Finds cases of incorrect use of certain method calls." />
+			<property name="enabled" value="false" />
+		</check>
 		<check name="JavaLogClassNameCheck">
 			<category name="Bug Prevention" />
 			<description name="Checks the name of the class that is passed in `LogFactoryUtil.getLog`." />
@@ -974,10 +980,11 @@
 		<check name="JavaUpgradeCompanyThreadLocalCheck">
 			<category name="Bug Prevention" />
 			<description name="Checks that we do not use `CompanyThreadLocal.setCompanyId*` in upgrade classes." />
+			<property name="enabled" value="false" />
 		</check>
 		<check name="JavaUpgradeConnectionCheck">
 			<category name="Bug Prevention" />
-			<description name="Finds cases where `DataAccess.getConnection` is used (instead of using the available global variable `connection`)." />
+			<description name="Performs several checks on connection in Upgrade classes." />
 		</check>
 		<check name="JavaUpgradeCreateTableCheck">
 			<category name="Bug Prevention" />
@@ -2252,6 +2259,10 @@
 		<check name="XMLIvyFileCheck">
 			<category name="Styling" />
 			<description name="Checks the order of dependencies in `ivy.xml` file." />
+		</check>
+		<check name="XMLLiferayWebFileCheck">
+			<category name="Bug Prevention" />
+			<description name="Performs several checks on `liferay-web.xml` file." />
 		</check>
 		<check name="XMLServiceReferenceCheck">
 			<category name="Bug Prevention" />

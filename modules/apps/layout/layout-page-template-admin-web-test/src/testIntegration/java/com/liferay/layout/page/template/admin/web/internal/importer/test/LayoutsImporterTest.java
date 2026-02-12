@@ -292,24 +292,24 @@ public class LayoutsImporterTest {
 			},
 			LayoutPageTemplateEntryTypeConstants.DISPLAY_PAGE);
 
-		ZipReader zipReader = _zipReaderFactory.getZipReader(file);
-
 		ZipWriter zipWriter = _zipWriterFactory.getZipWriter();
 
-		for (String entry : zipReader.getEntries()) {
-			zipWriter.addEntry(entry, zipReader.getEntryAsString(entry));
+		try (ZipReader zipReader = _zipReaderFactory.getZipReader(file)) {
+			for (String entry : zipReader.getEntries()) {
+				zipWriter.addEntry(entry, zipReader.getEntryAsString(entry));
+			}
+
+			file = _layoutsExporter.exportLayoutPageTemplateEntries(
+				new long[] {
+					masterLayoutPageTemplateEntry.getLayoutPageTemplateEntryId()
+				},
+				LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT);
 		}
 
-		file = _layoutsExporter.exportLayoutPageTemplateEntries(
-			new long[] {
-				masterLayoutPageTemplateEntry.getLayoutPageTemplateEntryId()
-			},
-			LayoutPageTemplateEntryTypeConstants.MASTER_LAYOUT);
-
-		zipReader = _zipReaderFactory.getZipReader(file);
-
-		for (String entry : zipReader.getEntries()) {
-			zipWriter.addEntry(entry, zipReader.getEntryAsString(entry));
+		try (ZipReader zipReader = _zipReaderFactory.getZipReader(file)) {
+			for (String entry : zipReader.getEntries()) {
+				zipWriter.addEntry(entry, zipReader.getEntryAsString(entry));
+			}
 		}
 
 		List<LayoutsImporterResultEntry> layoutsImporterResultEntries =
@@ -881,9 +881,10 @@ public class LayoutsImporterTest {
 
 		SegmentsExperience segmentsExperience =
 			_segmentsExperienceLocalService.addSegmentsExperience(
-				null, TestPropsValues.getUserId(), _group1.getGroupId(), 0,
-				draftLayout.getPlid(), RandomTestUtil.randomLocaleStringMap(),
-				false, new UnicodeProperties(true), _serviceContext1);
+				null, TestPropsValues.getUserId(), _group1.getGroupId(), null,
+				null, draftLayout.getPlid(),
+				RandomTestUtil.randomLocaleStringMap(), false,
+				new UnicodeProperties(true), _serviceContext1);
 
 		LayoutPageTemplateStructureRel layoutPageTemplateStructureRel =
 			_layoutPageTemplateStructureRelLocalService.

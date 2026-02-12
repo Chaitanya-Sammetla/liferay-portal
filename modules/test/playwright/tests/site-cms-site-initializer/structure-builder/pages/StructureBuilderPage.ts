@@ -18,8 +18,7 @@ export const FIELD_TYPES = [
 	'Long Text',
 	'Rich Text',
 	'Decimal',
-	'Single Select',
-	'Multiselect',
+	'Select from List',
 	'Numeric',
 	'Date',
 	'Date and Time',
@@ -92,16 +91,19 @@ export class StructureBuilderPage {
 		}).toPass();
 	}
 
+	getTreeItem(field: Field) {
+		return this.page
+			.locator('.treeview-link', {hasText: field.label})
+			.nth(field.nth || 0);
+	}
+
 	async addField(type: FieldType, parent?: Field) {
 		let trigger: Locator;
 
 		if (parent) {
 			await this.selectFields([parent]);
 
-			const treeItem = this.page
-				.locator('.treeview-item')
-				.getByLabel(parent.label, {exact: true})
-				.nth(parent.nth || 0);
+			const treeItem = this.getTreeItem(parent);
 
 			trigger = treeItem.getByTitle('Add Field');
 		}
@@ -178,6 +180,7 @@ export class StructureBuilderPage {
 		label,
 		localizable,
 		mandatory,
+		multiselection,
 		name,
 		picklist,
 		requestFile,
@@ -186,6 +189,7 @@ export class StructureBuilderPage {
 		label?: string;
 		localizable?: boolean;
 		mandatory?: boolean;
+		multiselection?: boolean;
 		name?: string;
 		picklist?: string;
 		requestFile?: 'computer' | 'document-library';
@@ -238,6 +242,17 @@ export class StructureBuilderPage {
 
 		if (mandatory !== undefined && !(await mandatoryToggle.isChecked())) {
 			await mandatoryToggle.click();
+		}
+
+		const multiselectionToggle = this.page.getByRole('checkbox', {
+			name: 'Multiselection',
+		});
+
+		if (
+			multiselection !== undefined &&
+			!(await multiselectionToggle.isChecked())
+		) {
+			await multiselectionToggle.click();
 		}
 
 		if (requestFile !== undefined) {
@@ -380,18 +395,17 @@ export class StructureBuilderPage {
 		}).toPass();
 	}
 
-	async deleteFields(fields: Field[]) {
+	async deleteFields(
+		fields: Field[],
+		{confirm}: {confirm?: boolean} = {confirm: true}
+	) {
 
 		// Deleting one field
 
 		if (fields.length === 1) {
 			const [field] = fields;
 
-			const treeItems = this.page.getByRole('treeitem', {
-				name: field.label,
-			});
-
-			const treeItem = treeItems.nth(field.nth || 0);
+			const treeItem = this.getTreeItem(field);
 
 			await treeItem.waitFor({state: 'visible'});
 
@@ -413,6 +427,21 @@ export class StructureBuilderPage {
 				autoClick: true,
 				target: this.page.getByRole('menuitem', {name: 'Delete'}),
 				trigger: this.page.getByLabel('Selection Options'),
+			});
+		}
+
+		// Wait some time in case deletion modal is shown
+
+		await this.page.waitForTimeout(2500);
+
+		const modal = this.page.locator('.modal-content', {
+			hasText: 'Delete Fields',
+		});
+
+		if ((await modal.isVisible()) && confirm) {
+			await clickAndExpectToBeHidden({
+				target: modal,
+				trigger: modal.getByText('Delete', {exact: true}),
 			});
 		}
 	}
@@ -441,10 +470,7 @@ export class StructureBuilderPage {
 	}
 
 	async expandField(field: Field) {
-		const treeItem = this.page
-			.locator('.treeview-item')
-			.getByLabel(field.label, {exact: true})
-			.nth(field.nth || 0);
+		const treeItem = this.getTreeItem(field);
 
 		await expect(async () => {
 			await treeItem.locator('.component-expander').click({timeout: 500});
@@ -460,6 +486,10 @@ export class StructureBuilderPage {
 	}
 
 	async publishStructure() {
+		const url = new URL(this.page.url());
+
+		const objectDefinitionId = url.searchParams.get('objectDefinitionId');
+
 		const publish = async () => {
 			await this.publishButton.click();
 
@@ -467,6 +497,12 @@ export class StructureBuilderPage {
 				timeout: 10000,
 			});
 		};
+
+		if (objectDefinitionId) {
+			await publish();
+
+			return Number(objectDefinitionId);
+		}
 
 		const [response] = await Promise.all([
 			this.page.waitForResponse(
@@ -478,7 +514,9 @@ export class StructureBuilderPage {
 			await publish(),
 		]);
 
-		return await response.json();
+		const {id} = await response.json();
+
+		return id;
 	}
 
 	async saveStructure(
@@ -495,7 +533,7 @@ export class StructureBuilderPage {
 				(response) =>
 					response.url().includes('object-definitions') &&
 					response.status() === 200,
-				{timeout: 5000}
+				{timeout: 10000}
 			),
 			await save(),
 		]);
@@ -516,11 +554,7 @@ export class StructureBuilderPage {
 
 	async selectFields(fields: Field[]) {
 		for (const [i, field] of fields.entries()) {
-			const treeItem = this.page
-				.getByRole('treeitem', {
-					name: field.label,
-				})
-				.nth(field.nth || 0);
+			const treeItem = this.getTreeItem(field);
 
 			await expect(async () => {
 				await treeItem.click({
@@ -563,7 +597,7 @@ export class StructureBuilderPage {
 	}
 
 	async selectStructure() {
-		const treeItem = this.page.getByRole('treeitem').first();
+		const treeItem = this.page.locator('.treeview-link').first();
 
 		await expect(async () => {
 			await treeItem.click({
@@ -591,6 +625,18 @@ export class StructureBuilderPage {
 				await row.getByLabel('Select Workflow').selectOption(workflow);
 			}
 		}
+	}
+
+	async switchLanguage(languageId: string) {
+		const trigger = this.page.getByLabel('Open Localizations');
+
+		await clickAndExpectToBeVisible({
+			autoClick: true,
+			target: this.page.locator('.dropdown-item', {hasText: languageId}),
+			trigger,
+		});
+
+		await expect(trigger).toHaveAttribute('title', languageId);
 	}
 
 	async switchTab(name: 'General' | 'Search' | 'Workflow') {

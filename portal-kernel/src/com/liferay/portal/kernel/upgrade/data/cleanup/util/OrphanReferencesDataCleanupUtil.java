@@ -34,6 +34,31 @@ import java.util.Set;
  */
 public class OrphanReferencesDataCleanupUtil {
 
+	public static List<SafeCloseable> addTemporaryIndexes(
+			String[] columnNames, Connection connection, DB db,
+			String tableName)
+		throws Exception {
+
+		Set<String> firstIndexColumnNames = _getFirstIndexColumnNames(
+			connection, db, tableName);
+
+		List<SafeCloseable> safeCloseables = new ArrayList<>();
+
+		if (firstIndexColumnNames != null) {
+			for (String columnName : columnNames) {
+				if (!firstIndexColumnNames.contains(
+						StringUtil.toLowerCase(columnName))) {
+
+					safeCloseables.add(
+						db.addTemporaryIndex(
+							connection, tableName, false, columnName));
+				}
+			}
+		}
+
+		return safeCloseables;
+	}
+
 	public static void cleanUpTable(
 			Connection connection, String[] customJoinClauses, boolean readOnly,
 			String sourceAdditionalWhereClause, String sourceColumnName,
@@ -60,23 +85,8 @@ public class OrphanReferencesDataCleanupUtil {
 			aliasNeeded = true;
 		}
 
-		Set<String> firstIndexColumnNames = _getFirstIndexColumnNames(
-			connection, db, targetTableName);
-
-		List<SafeCloseable> safeCloseables = new ArrayList<>();
-
-		if (firstIndexColumnNames != null) {
-			for (String targetColumnName : targetColumnNames) {
-				if (!firstIndexColumnNames.contains(
-						StringUtil.toLowerCase(targetColumnName))) {
-
-					safeCloseables.add(
-						db.addTemporaryIndex(
-							connection, targetTableName, false,
-							targetColumnName));
-				}
-			}
-		}
+		List<SafeCloseable> safeCloseables = addTemporaryIndexes(
+			targetColumnNames, connection, db, targetTableName);
 
 		String whereClause = getWhereClause(
 			connection, customJoinClauses, sourceAdditionalWhereClause,
@@ -187,7 +197,9 @@ public class OrphanReferencesDataCleanupUtil {
 
 		String whereClause = null;
 
-		if (db.getDBType() == DBType.MYSQL) {
+		if ((db.getDBType() == DBType.MARIADB) ||
+			(db.getDBType() == DBType.MYSQL)) {
+
 			whereClause = _getMySQLWhereClause(
 				customJoinClauses, dbInspector, sourceColumnName,
 				sourceTableName, targetColumnNames, targetTableName);
@@ -282,10 +294,17 @@ public class OrphanReferencesDataCleanupUtil {
 			sb.append(StringPool.SPACE);
 			sb.append(aliasTableName);
 			sb.append(" on ");
-			sb.append(aliasTableName);
-			sb.append(StringPool.PERIOD);
-			sb.append(targetColumnName);
-			sb.append(" = ");
+
+			if ((customJoinClauses == null) ||
+				(customJoinClauses[index] == null) ||
+				!customJoinClauses[index].startsWith(
+					"[$TARGET_TABLE_ALIAS$]")) {
+
+				sb.append(aliasTableName);
+				sb.append(StringPool.PERIOD);
+				sb.append(targetColumnName);
+				sb.append(" = ");
+			}
 
 			if ((customJoinClauses != null) &&
 				(customJoinClauses[index] != null)) {
@@ -346,10 +365,16 @@ public class OrphanReferencesDataCleanupUtil {
 		sb.append(" where (");
 
 		for (int i = 0; i < targetColumnNames.length; i++) {
-			sb.append(targetTableName);
-			sb.append(StringPool.PERIOD);
-			sb.append(targetColumnNames[i]);
-			sb.append(" = ");
+			if ((customJoinClauses == null) || (customJoinClauses[i] == null) ||
+				(!customJoinClauses[i].startsWith("CAST") &&
+				 !customJoinClauses[i].startsWith("CONVERT") &&
+				 !customJoinClauses[i].startsWith("[$TARGET_TABLE_ALIAS$]"))) {
+
+				sb.append(targetTableName);
+				sb.append(StringPool.PERIOD);
+				sb.append(targetColumnNames[i]);
+				sb.append(" = ");
+			}
 
 			if ((customJoinClauses != null) && (customJoinClauses[i] != null)) {
 				sb.append(

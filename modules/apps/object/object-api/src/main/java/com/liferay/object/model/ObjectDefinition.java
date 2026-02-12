@@ -61,6 +61,8 @@ public interface ObjectDefinition
 
 	public com.liferay.object.model.bag.ObjectFieldBag getObjectFieldBag();
 
+	public ObjectFolder getObjectFolder();
+
 	public String getObjectFolderExternalReferenceCode();
 
 	public String getOSGiJaxRsName();
@@ -82,6 +84,8 @@ public interface ObjectDefinition
 	public String getShortName();
 
 	public boolean isApproved();
+
+	public boolean isCMP();
 
 	public boolean isCMS();
 
@@ -106,5 +110,7 @@ public interface ObjectDefinition
 
 	public void setObjectFieldBag(
 		com.liferay.object.model.bag.ObjectFieldBag objectFieldBag);
+
+	public void setObjectFolder(ObjectFolder objectFolder);
 
 }

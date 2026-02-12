@@ -39,6 +39,7 @@ import com.liferay.osb.faro.engine.client.model.Interest;
 import com.liferay.osb.faro.engine.client.model.PageVisited;
 import com.liferay.osb.faro.engine.client.model.ProjectUsageMetric;
 import com.liferay.osb.faro.engine.client.model.Provider;
+import com.liferay.osb.faro.engine.client.model.RealTimeMembershipMetric;
 import com.liferay.osb.faro.engine.client.model.Results;
 import com.liferay.osb.faro.engine.client.model.provider.LiferayProvider;
 import com.liferay.osb.faro.engine.client.util.FilterBuilder;
@@ -89,9 +90,9 @@ public interface ContactsEngineClient {
 		String ownerType, List<FieldMappingMap> fieldMappingMaps);
 
 	public IndividualSegment addIndividualSegment(
-		FaroProject faroProject, long userId, String channelId, String filter,
-		boolean includeAnonymousUsers, String name, String segmentType,
-		String status);
+		FaroProject faroProject, long userId, String channelId,
+		String filterString, boolean includeAnonymousUsers, String name,
+		String segmentType, String status);
 
 	public IndividualSegmentMembership addMembership(
 		FaroProject faroProject, String individualSegmentId,
@@ -169,14 +170,14 @@ public interface ContactsEngineClient {
 
 	public Results<Account> getAccounts(
 		FaroProject faroProject, String channelId, String dataSourceId,
-		String individualSegmentId, String filter, String query,
+		String individualSegmentId, String filterString, String query,
 		List<String> fields, int cur, int delta,
 		List<OrderByField> orderByFields);
 
 	public Results<Distribution> getAccountsDistribution(
 		FaroProject faroProject, String channelId, String fieldMappingFieldName,
-		String filter, String individualSegmentId, int count, int numberOfBins,
-		List<OrderByField> orderByFields);
+		String filterString, String individualSegmentId, int count,
+		int numberOfBins, List<OrderByField> orderByFields);
 
 	public Results<Activity> getActivities(
 		FaroProject faroProject, String ownerId, String ownerType,
@@ -363,9 +364,10 @@ public interface ContactsEngineClient {
 	public Results<Individual> getIndividuals(
 		FaroProject faroProject, String accountId, String channelId,
 		String dataSourceId, String individualSegmentId,
-		String notIndividualSegmentId, String interestName, String filter,
-		String query, List<String> fields, boolean includeAnonymousUsers,
-		int cur, int delta, List<OrderByField> orderByFields);
+		String notIndividualSegmentId, String interestName, String filterString,
+		List<String> profileTypes, String query, List<String> fields,
+		boolean includeAnonymousUsers, int cur, int delta,
+		List<OrderByField> orderByFields);
 
 	public Results<Individual> getIndividualsByIndividualSegment(
 		FaroProject faroProject, String individualSegmentsId, String query,
@@ -374,9 +376,10 @@ public interface ContactsEngineClient {
 		List<OrderByField> orderByFields);
 
 	public Results<Individual> getIndividualsByIndividualSegment(
-		FaroProject faroProject, String individualSegmentId, String filter,
-		String query, List<String> fields, boolean includeAnonymousUsers,
-		int cur, int delta, List<OrderByField> orderByFields);
+		FaroProject faroProject, String individualSegmentId,
+		String filterString, String query, List<String> fields,
+		boolean includeAnonymousUsers, int cur, int delta,
+		List<OrderByField> orderByFields);
 
 	public long getIndividualsCreatedBetweenCount(
 		FaroProject faroProject, Date endDate, Date startDate);
@@ -413,9 +416,9 @@ public interface ContactsEngineClient {
 
 	public Results<IndividualSegmentRealTimeMembership>
 		getIndividualSegmentRealTimeMemberships(
-			FaroProject faroProject, String day, String filter,
-			String individualSegmentId, int cur, int delta,
-			List<OrderByField> orderByFields);
+			FaroProject faroProject, String day, String individualSegmentId,
+			List<String> profileTypes, String query, List<String> types,
+			int cur, int delta, List<OrderByField> orderByFields);
 
 	public Results<IndividualSegment> getIndividualSegments(
 		FaroProject faroProject, String channelId, String dataSourceId,
@@ -450,6 +453,9 @@ public interface ContactsEngineClient {
 	public Results<ProjectUsageMetric> getProjectUsageMetrics(
 		FaroProject faroProject, Date sinceDate);
 
+	public RealTimeMembershipMetric getRealTimeMembershipMetric(
+		FaroProject faroProject, String individualSegmentId);
+
 	public long getReportsExportCSVCount(
 			FaroProject faroProject, String path,
 			Map<String, List<String>> queryParameters)
@@ -463,7 +469,7 @@ public interface ContactsEngineClient {
 
 	public Results<String> getSessionValues(
 		FaroProject faroProject, String channelId, String fieldName,
-		String filter, String query, int cur, int delta);
+		String filterString, String query, int cur, int delta);
 
 	public Results<Individual> getSimilarIndividuals(
 		FaroProject faroProject, String individualId, String query,
@@ -530,7 +536,7 @@ public interface ContactsEngineClient {
 
 	public IndividualSegment updateIndividualSegment(
 		FaroProject faroProject, String id, long userId, String channelId,
-		String filter, boolean includeAnonymousUsers, String name,
+		String filterString, boolean includeAnonymousUsers, String name,
 		String segmentType);
 
 }

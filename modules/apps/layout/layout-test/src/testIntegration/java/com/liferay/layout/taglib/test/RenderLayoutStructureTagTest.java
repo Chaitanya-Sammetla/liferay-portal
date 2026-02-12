@@ -175,6 +175,7 @@ import com.liferay.portal.kernel.util.MapUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
 import com.liferay.portal.kernel.util.PropsValues;
+import com.liferay.portal.kernel.util.ScopeUtil;
 import com.liferay.portal.kernel.util.StringUtil;
 import com.liferay.portal.kernel.util.UnicodeProperties;
 import com.liferay.portal.kernel.util.UnicodePropertiesBuilder;
@@ -1179,7 +1180,7 @@ public class RenderLayoutStructureTagTest {
 		Layout draftLayout = layout.fetchDraftLayout();
 
 		SegmentsExperience draftSegmentsExperience = _addSegmentsExperience(
-			draftLayout, segmentsEntry2.getSegmentsEntryId());
+			draftLayout, segmentsEntry2);
 
 		_addCollectionStyledLayoutStructureItem(
 			assetListEntry.getAssetListEntryId(), layout,
@@ -1269,7 +1270,7 @@ public class RenderLayoutStructureTagTest {
 		Layout draftLayout = layout.fetchDraftLayout();
 
 		SegmentsExperience draftSegmentsExperience = _addSegmentsExperience(
-			draftLayout, segmentsEntry.getSegmentsEntryId());
+			draftLayout, segmentsEntry);
 
 		_addCollectionStyledLayoutStructureItem(
 			assetListEntry.getAssetListEntryId(), layout,
@@ -1423,7 +1424,7 @@ public class RenderLayoutStructureTagTest {
 	}
 
 	@Test
-	@TestInfo("LPD-64102")
+	@TestInfo({"LPD-64102", "LPD-77454"})
 	public void testRenderCollectionStyledLayoutStructureItemWithAssetListEntryReferencedByExternalReferenceCode()
 		throws Exception {
 
@@ -1473,8 +1474,6 @@ public class RenderLayoutStructureTagTest {
 			).put(
 				"externalReferenceCode",
 				assetListEntry.getExternalReferenceCode()
-			).put(
-				"itemType", JournalArticle.class.getName()
 			).put(
 				"scopeExternalReferenceCode",
 				companyGroup.getExternalReferenceCode()
@@ -3597,7 +3596,7 @@ public class RenderLayoutStructureTagTest {
 	}
 
 	private SegmentsExperience _addSegmentsExperience(
-			Layout layout, long segmentsEntryId)
+			Layout layout, SegmentsEntry segmentsEntry)
 		throws Exception {
 
 		MVCActionCommand addSegmentsExperienceMVCActionCommand =
@@ -3629,7 +3628,11 @@ public class RenderLayoutStructureTagTest {
 		mockLiferayPortletActionRequest.setParameter(
 			"plid", String.valueOf(layout.getPlid()));
 		mockLiferayPortletActionRequest.setParameter(
-			"segmentsEntryId", String.valueOf(segmentsEntryId));
+			"segmentsEntryERC", segmentsEntry.getExternalReferenceCode());
+		mockLiferayPortletActionRequest.setParameter(
+			"segmentsEntryScopeERC",
+			ScopeUtil.getItemScopeExternalReferenceCode(
+				segmentsEntry.getGroupId(), layout.getGroupId()));
 
 		JSONObject jsonObject = ReflectionTestUtil.invoke(
 			addSegmentsExperienceMVCActionCommand, "doTransactionalCommand",

@@ -5,6 +5,10 @@
 
 package com.liferay.ai.hub.internal.web.search;
 
+import com.liferay.oauth2.provider.model.OAuth2Application;
+import com.liferay.oauth2.provider.model.OAuth2Authorization;
+import com.liferay.oauth2.provider.service.OAuth2ApplicationLocalServiceUtil;
+import com.liferay.oauth2.provider.service.OAuth2AuthorizationLocalServiceUtil;
 import com.liferay.petra.reflect.ReflectionUtil;
 import com.liferay.portal.kernel.json.JSONFactoryUtil;
 import com.liferay.portal.kernel.json.JSONObject;
@@ -15,7 +19,6 @@ import com.liferay.portal.kernel.util.ContentTypes;
 import com.liferay.portal.kernel.util.Http;
 import com.liferay.portal.kernel.util.HttpComponentsUtil;
 import com.liferay.portal.kernel.util.HttpUtil;
-import com.liferay.portal.kernel.util.PropsValues;
 import com.liferay.portal.kernel.util.Validator;
 import com.liferay.portal.search.rest.dto.v1_0.SearchResult;
 
@@ -29,7 +32,6 @@ import java.net.URI;
 import java.net.URLEncoder;
 
 import java.util.ArrayList;
-import java.util.Base64;
 import java.util.List;
 import java.util.Map;
 
@@ -38,8 +40,13 @@ import java.util.Map;
  */
 public class LiferayWebSearchEngine implements WebSearchEngine {
 
-	public LiferayWebSearchEngine(String blueprintExternalReferenceCode) {
+	public LiferayWebSearchEngine(
+		String accessToken, String blueprintExternalReferenceCode,
+		String userToken) {
+
+		_accessToken = accessToken;
 		_blueprintExternalReferenceCode = blueprintExternalReferenceCode;
+		_userToken = userToken;
 	}
 
 	@Override
@@ -54,20 +61,6 @@ public class LiferayWebSearchEngine implements WebSearchEngine {
 		}
 	}
 
-	private String _getAuthorization() throws Exception {
-
-		// TODO replace basic auth with token based authentication
-
-		Base64.Encoder encoder = Base64.getEncoder();
-
-		String userNameAndPassword =
-			"test@liferay.com:" + PropsValues.DEFAULT_ADMIN_PASSWORD;
-
-		return "Basic " +
-			new String(
-				encoder.encode(userNameAndPassword.getBytes("UTF-8")), "UTF-8");
-	}
-
 	private WebSearchResults _search(WebSearchRequest webSearchRequest)
 		throws Exception {
 
@@ -76,13 +69,21 @@ public class LiferayWebSearchEngine implements WebSearchEngine {
 
 		Http.Options options = new Http.Options();
 
-		options.addHeader(HttpHeaders.AUTHORIZATION, _getAuthorization());
 		options.addHeader(
 			HttpHeaders.CONTENT_TYPE, ContentTypes.APPLICATION_JSON);
+		options.addHeader("Liferay-AI-Hub-On-Behalf-Of", _userToken);
 
-		// TODO replace http://localhost:8080 with origin's base URL
+		OAuth2Authorization oAuth2Authorization =
+			OAuth2AuthorizationLocalServiceUtil.
+				getOAuth2AuthorizationByAccessTokenContent(
+					_accessToken.substring(7));
 
-		String location = "http://localhost:8080/o/search/v1.0/search";
+		OAuth2Application oAuth2Application =
+			OAuth2ApplicationLocalServiceUtil.getOAuth2Application(
+				oAuth2Authorization.getOAuth2ApplicationId());
+
+		String location =
+			oAuth2Application.getHomePageURL() + "/o/search/v1.0/search";
 
 		if (!Validator.isBlank(_blueprintExternalReferenceCode)) {
 			location = HttpComponentsUtil.addParameter(
@@ -110,6 +111,12 @@ public class LiferayWebSearchEngine implements WebSearchEngine {
 			SearchResult searchResult = SearchResult.toDTO(
 				itemJSONObject.toString());
 
+			float score = searchResult.getScore();
+
+			if (score < 5) {
+				continue;
+			}
+
 			String url = "";
 
 			if (searchResult.getItemURL() != null) {
@@ -121,7 +128,7 @@ public class LiferayWebSearchEngine implements WebSearchEngine {
 					searchResult.getTitle(),
 					URI.create(URLEncoder.encode(url, "UTF-8")), null,
 					searchResult.getDescription(),
-					Map.of("score", String.valueOf(searchResult.getScore()))));
+					Map.of("score", String.valueOf(score))));
 		}
 
 		return WebSearchResults.from(
@@ -132,6 +139,8 @@ public class LiferayWebSearchEngine implements WebSearchEngine {
 	private static final Log _log = LogFactoryUtil.getLog(
 		LiferayWebSearchEngine.class);
 
+	private final String _accessToken;
 	private final String _blueprintExternalReferenceCode;
+	private final String _userToken;
 
 }

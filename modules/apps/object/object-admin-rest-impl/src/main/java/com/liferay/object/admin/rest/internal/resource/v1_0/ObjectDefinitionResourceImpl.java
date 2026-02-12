@@ -204,6 +204,11 @@ public class ObjectDefinitionResourceImpl
 			}
 
 			@Override
+			public int getRank() {
+				return 99;
+			}
+
+			@Override
 			public String getResourceClassName() {
 				return ObjectDefinitionResourceImpl.class.getName();
 			}
@@ -350,6 +355,8 @@ public class ObjectDefinitionResourceImpl
 							objectDefinition.getEnableIndexSearch()),
 						GetterUtil.getBoolean(
 							objectDefinition.getEnableObjectEntryDraft()),
+						GetterUtil.getBoolean(
+							objectDefinition.getEnableObjectEntryHistory()),
 						GetterUtil.getBoolean(
 							objectDefinition.getEnableObjectEntrySchedule()),
 						GetterUtil.getBoolean(
@@ -1338,9 +1345,9 @@ public class ObjectDefinitionResourceImpl
 		}
 
 		ObjectFolder objectFolder =
-			_objectFolderLocalService.getObjectFolderByExternalReferenceCode(
+			_objectFolderLocalService.getOrAddEmptyObjectFolder(
 				objectFolderExternalReferenceCode,
-				contextCompany.getCompanyId());
+				contextCompany.getCompanyId(), contextUser.getUserId());
 
 		return objectFolder.getObjectFolderId();
 	}

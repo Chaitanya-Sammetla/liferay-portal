@@ -25,13 +25,10 @@ import com.liferay.portal.search.elasticsearch8.internal.aggregation.Elasticsear
 import com.liferay.portal.search.elasticsearch8.internal.aggregation.ElasticsearchPipelineAggregationResultTranslator;
 import com.liferay.portal.search.elasticsearch8.internal.aggregation.PipelineAggregationResultTranslatorFactory;
 import com.liferay.portal.search.elasticsearch8.internal.hits.HitsMetadataTranslator;
-import com.liferay.portal.search.elasticsearch8.internal.search.response.SearchHitDocumentTranslator;
 import com.liferay.portal.search.elasticsearch8.internal.search.response.SearchResponseTranslator;
-import com.liferay.portal.search.elasticsearch8.internal.stats.StatsTranslator;
 import com.liferay.portal.search.elasticsearch8.internal.util.SetterUtil;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchRequest;
 import com.liferay.portal.search.engine.adapter.search.SearchSearchResponse;
-import com.liferay.portal.search.geolocation.GeoBuilders;
 import com.liferay.portal.search.groupby.GroupByResponseFactory;
 import com.liferay.portal.search.highlight.HighlightFieldBuilderFactory;
 import com.liferay.portal.search.hits.SearchHitBuilderFactory;
@@ -63,7 +60,7 @@ public class SearchSearchResponseAssemblerImpl
 		SearchSearchRequest searchSearchRequest,
 		SearchSearchResponse searchSearchResponse) {
 
-		_commonSearchResponseAssembler.assemble(
+		CommonSearchResponseAssembler.INSTANCE.assemble(
 			searchSearchRequest, searchSearchResponse, responseBody,
 			searchRequestString);
 
@@ -83,11 +80,10 @@ public class SearchSearchResponseAssemblerImpl
 		Aggregate aggregate) {
 
 		return new ElasticsearchAggregationResultTranslator(
-			aggregate, _aggregationResults, _geoBuilders,
+			aggregate, _aggregationResults,
 			new HitsMetadataTranslator(
-				_documentBuilderFactory, _geoBuilders,
-				_highlightFieldBuilderFactory, _searchHitBuilderFactory,
-				_searchHitsBuilderFactory));
+				_documentBuilderFactory, _highlightFieldBuilderFactory,
+				_searchHitBuilderFactory, _searchHitsBuilderFactory));
 	}
 
 	@Override
@@ -101,9 +97,8 @@ public class SearchSearchResponseAssemblerImpl
 	@Activate
 	protected void activate() {
 		_searchResponseTranslator = new SearchResponseTranslator(
-			_groupByResponseFactory, _searchHitDocumentTranslator,
-			_statsRequestBuilderFactory, _statsResultsTranslator,
-			_statsTranslator);
+			_groupByResponseFactory, _statsRequestBuilderFactory,
+			_statsResultsTranslator);
 	}
 
 	protected void setCount(
@@ -142,7 +137,9 @@ public class SearchSearchResponseAssemblerImpl
 			elasticsearchAggregationResultsTranslator.translate(aggregates);
 
 		for (AggregationResult aggregationResult : aggregationResults) {
-			searchSearchResponse.addAggregationResult(aggregationResult);
+			if (aggregationResult != null) {
+				searchSearchResponse.addAggregationResult(aggregationResult);
+			}
 		}
 	}
 
@@ -160,9 +157,8 @@ public class SearchSearchResponseAssemblerImpl
 
 		HitsMetadataTranslator hitsMetadataTranslator =
 			new HitsMetadataTranslator(
-				_documentBuilderFactory, _geoBuilders,
-				_highlightFieldBuilderFactory, _searchHitBuilderFactory,
-				_searchHitsBuilderFactory);
+				_documentBuilderFactory, _highlightFieldBuilderFactory,
+				_searchHitBuilderFactory, _searchHitsBuilderFactory);
 
 		searchSearchResponse.setSearchHits(
 			hitsMetadataTranslator.translate(
@@ -188,13 +184,7 @@ public class SearchSearchResponseAssemblerImpl
 	private AggregationResults _aggregationResults;
 
 	@Reference
-	private CommonSearchResponseAssembler _commonSearchResponseAssembler;
-
-	@Reference
 	private DocumentBuilderFactory _documentBuilderFactory;
-
-	@Reference
-	private GeoBuilders _geoBuilders;
 
 	@Reference
 	private GroupByResponseFactory _groupByResponseFactory;
@@ -206,9 +196,6 @@ public class SearchSearchResponseAssemblerImpl
 	private SearchHitBuilderFactory _searchHitBuilderFactory;
 
 	@Reference
-	private SearchHitDocumentTranslator _searchHitDocumentTranslator;
-
-	@Reference
 	private SearchHitsBuilderFactory _searchHitsBuilderFactory;
 
 	private SearchResponseTranslator _searchResponseTranslator;
@@ -218,8 +205,5 @@ public class SearchSearchResponseAssemblerImpl
 
 	@Reference
 	private StatsResultsTranslator _statsResultsTranslator;
-
-	@Reference
-	private StatsTranslator _statsTranslator;
 
 }

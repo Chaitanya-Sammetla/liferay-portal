@@ -7,21 +7,17 @@ package com.liferay.portal.search.elasticsearch8.internal.search.engine.adapter.
 
 import co.elastic.clients.elasticsearch.ElasticsearchClient;
 import co.elastic.clients.elasticsearch._types.query_dsl.Query;
-import co.elastic.clients.elasticsearch._types.query_dsl.QueryVariant;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryRequest;
 import co.elastic.clients.elasticsearch.core.DeleteByQueryResponse;
 
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.search.elasticsearch8.internal.connection.ElasticsearchClientResolver;
-import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryTranslator;
+import com.liferay.portal.search.elasticsearch8.internal.legacy.query.ElasticsearchQueryVisitor;
 import com.liferay.portal.search.engine.adapter.document.DeleteByQueryDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.DeleteByQueryDocumentResponse;
-import com.liferay.portal.search.index.IndexNameBuilder;
-import com.liferay.portal.search.query.QueryTranslator;
 
 import java.io.IOException;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -44,12 +40,6 @@ public class DeleteByQueryDocumentRequestExecutorImpl
 			deleteByQueryResponse.total(), deleteByQueryResponse.took());
 	}
 
-	@Activate
-	protected void activate() {
-		_legacyQueryTranslator = new ElasticsearchQueryTranslator(
-			_indexNameBuilder);
-	}
-
 	protected DeleteByQueryRequest createDeleteByQueryRequest(
 		DeleteByQueryDocumentRequest deleteByQueryDocumentRequest) {
 
@@ -62,14 +52,16 @@ public class DeleteByQueryDocumentRequestExecutorImpl
 		if (deleteByQueryDocumentRequest.getPortalSearchQuery() != null) {
 			builder.query(
 				new Query(
-					_queryTranslator.translate(
-						deleteByQueryDocumentRequest.getPortalSearchQuery())));
+					com.liferay.portal.search.elasticsearch8.internal.query.
+						ElasticsearchQueryVisitor.INSTANCE.translate(
+							deleteByQueryDocumentRequest.
+								getPortalSearchQuery())));
 		}
 		else {
 			builder.query(
 				new Query(
-					_legacyQueryTranslator.translate(
-						deleteByQueryDocumentRequest.getQuery(), null)));
+					ElasticsearchQueryVisitor.INSTANCE.translate(
+						deleteByQueryDocumentRequest.getQuery())));
 		}
 
 		builder.refresh(deleteByQueryDocumentRequest.isRefresh());
@@ -96,14 +88,5 @@ public class DeleteByQueryDocumentRequestExecutorImpl
 
 	@Reference
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
-
-	@Reference
-	private IndexNameBuilder _indexNameBuilder;
-
-	private com.liferay.portal.kernel.search.query.QueryTranslator<QueryVariant>
-		_legacyQueryTranslator;
-	private final QueryTranslator<QueryVariant> _queryTranslator =
-		new com.liferay.portal.search.elasticsearch8.internal.query.
-			ElasticsearchQueryTranslator();
 
 }

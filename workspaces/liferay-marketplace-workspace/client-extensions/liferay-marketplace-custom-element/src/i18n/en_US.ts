@@ -272,6 +272,7 @@ export default {
 	'explore-over-800-apps-available-in-the-liferay-marketplace-from-a-variety-of-publishers-apps-allow-you-to-accelerate-your-liferay-development-get-to-market-faster':
 		'Explore over 800 apps available in the Liferay Marketplace from a variety of publishers. Apps allow you to accelerate your Liferay development get to market faster.',
 	'export': 'Export',
+	'export-csv': 'Export CSV',
 	'extend-trial': 'Extend Trial',
 	'extension': 'Extension',
 	'extension-optional': 'Extension (optional)',
@@ -403,6 +404,7 @@ export default {
 	'manage-your-teams-trial': "Manage your team's trial",
 	'mark-as-paid': 'Mark as Paid',
 	'marked-as-paid': 'Marked as paid.',
+	'marketplace-licensor-eula': 'Marketplace Licensor EULA',
 	'maximum-number-of-uploads-reached': 'Maximum Number of Uploads Reached',
 	'modified-date': 'Modified Date',
 	'modular-components-built-with-html-css-and-javascript-offer-extensible-and-reusable-elements-or-collections-of-elements-for-constructing-content-pages-and-templates':
@@ -474,6 +476,7 @@ export default {
 	'payment-method': 'Payment Method',
 	'payment-status': 'Payment Status',
 	'payment-summary': 'Payment Summary',
+	'payments': 'Payments',
 	'paypal-account': 'PayPal Account',
 	'pending': 'Pending',
 	'personal': 'Personal',

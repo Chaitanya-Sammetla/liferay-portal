@@ -1,5 +1,35 @@
 components:
     schemas:
+        Comment:
+            properties:
+                category:
+                    type: string
+                creator:
+                    $ref: ../../../../../apps/headless/headless-delivery/headless-delivery-impl/rest-openapi.yaml#Creator
+                    readOnly: true
+                dateCreated:
+                    format: date-time
+                    readOnly: true
+                    type: string
+                dateModified:
+                    format: date-time
+                    readOnly: true
+                    type: string
+                externalReferenceCode:
+                    readOnly: true
+                    type: string
+                id:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                numberOfComments:
+                    readOnly: true
+                    type: integer
+                parentCommentId:
+                    format: int64
+                    type: integer
+                text:
+                    type: string
         DigitalSalesRoom:
             properties:
                 accountId:
@@ -126,6 +156,18 @@ components:
                     format: int64
                     readOnly: true
                     type: integer
+        InvitedMemberBrief:
+            properties:
+                emailAddress:
+                    readOnly: true
+                    type: string
+                id:
+                    format: int64
+                    readOnly: true
+                    type: integer
+                roleKey:
+                    readOnly: true
+                    type: string
         UserAccountBrief:
             properties:
                 alternateName:
@@ -224,6 +266,127 @@ paths:
             parameters:
                 -   in: path
                     name: digitalSalesRoomTemplateId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+            tags: ["DigitalSalesRoomTemplate"]
+        patch:
+            operationId: patchDigitalSalesRoomTemplate
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomTemplateId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+            tags: ["DigitalSalesRoomTemplate"]
+    "/digital-sales-room-templates/{digitalSalesRoomTemplateId}/digital-sales-rooms":
+        get:
+            operationId: getDigitalSalesRoomTemplateDigitalSalesRoomsPage
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomTemplateId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/DigitalSalesRoom"
+                                    type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/DigitalSalesRoom"
+                                    type: array
+            tags: ["DigitalSalesRoom"]
+        post:
+            operationId: postDigitalSalesRoomTemplateDigitalSalesRoom
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomTemplateId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/DigitalSalesRoom"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/DigitalSalesRoom"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/DigitalSalesRoom"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/DigitalSalesRoom"
+            tags: ["DigitalSalesRoom"]
+    "/digital-sales-room-templates/{parentDigitalSalesRoomTemplateId}/digital-sales-room-templates":
+        get:
+            operationId: getDigitalSalesRoomTemplateDigitalSalesRoomTemplatesPage
+            parameters:
+                -   in: path
+                    name: parentDigitalSalesRoomTemplateId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                                    type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                                    type: array
+            tags: ["DigitalSalesRoomTemplate"]
+        post:
+            operationId: postDigitalSalesRoomTemplateDigitalSalesRoomTemplate
+            parameters:
+                -   in: path
+                    name: parentDigitalSalesRoomTemplateId
                     required: true
                     schema:
                         format: int64
@@ -350,9 +513,76 @@ paths:
                             schema:
                                 $ref: "#/components/schemas/DigitalSalesRoom"
             tags: ["DigitalSalesRoom"]
-    "/digital-sales-rooms/{digitalSalesRoomId}/digital-sales-room-template":
+    "/digital-sales-rooms/{digitalSalesRoomId}/comments":
+        get:
+            operationId: getDigitalSalesRoomCommentsPage
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: query
+                    name: page
+                    schema:
+                        type: integer
+                -   in: query
+                    name: pageSize
+                    schema:
+                        type: integer
+                -   in: query
+                    name: search
+                    schema:
+                        type: string
+                -   in: query
+                    name: sort
+                    schema:
+                        type: string
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/Comment"
+                                    type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/Comment"
+                                    type: array
+            tags: ["Comment"]
         post:
-            operationId: postDigitalSalesRoomDigitalSalesRoomTemplate
+            operationId: postDigitalSalesRoomComment
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/Comment"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/Comment"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/Comment"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/Comment"
+            tags: ["Comment"]
+    "/digital-sales-rooms/{digitalSalesRoomId}/digital-sales-room-templates":
+        get:
+            operationId: getDigitalSalesRoomDigitalSalesRoomTemplatesPage
             parameters:
                 -   in: path
                     name: digitalSalesRoomId
@@ -365,11 +595,88 @@ paths:
                     content:
                         application/json:
                             schema:
+                                items:
+                                    $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                                    type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                                    type: array
+            tags: ["DigitalSalesRoomTemplate"]
+        post:
+            operationId: postDigitalSalesRoomDigitalSalesRoomTemplate
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/DigitalSalesRoomTemplate"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
                                 $ref: "#/components/schemas/DigitalSalesRoomTemplate"
                         application/xml:
                             schema:
                                 $ref: "#/components/schemas/DigitalSalesRoomTemplate"
             tags: ["DigitalSalesRoomTemplate"]
+    "/digital-sales-rooms/{digitalSalesRoomId}/invited-member-briefs":
+        get:
+            operationId: getDigitalSalesRoomInvitedMemberBriefsPage
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/InvitedMemberBrief"
+                                    type: array
+                        application/xml:
+                            schema:
+                                items:
+                                    $ref: "#/components/schemas/InvitedMemberBrief"
+                                    type: array
+            tags: ["InvitedMemberBrief"]
+    "/digital-sales-rooms/{digitalSalesRoomId}/invited-member-briefs/{invitedMemberBriefId}":
+        delete:
+            operationId: deleteDigitalSalesRoomInvitedMemberBrief
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: path
+                    name: invitedMemberBriefId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            responses:
+                204:
+                    content:
+                        application/json: {}
+                        application/xml: {}
+            tags: ["InvitedMemberBrief"]
     "/digital-sales-rooms/{digitalSalesRoomId}/user-account-briefs":
         get:
             operationId: getDigitalSalesRoomUserAccountBriefsPage
@@ -450,4 +757,37 @@ paths:
                     content:
                         application/json: {}
                         application/xml: {}
+            tags: ["UserAccountBrief"]
+        patch:
+            operationId: patchDigitalSalesRoomUserAccountBrief
+            parameters:
+                -   in: path
+                    name: digitalSalesRoomId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+                -   in: path
+                    name: userAccountBriefId
+                    required: true
+                    schema:
+                        format: int64
+                        type: integer
+            requestBody:
+                content:
+                    application/json:
+                        schema:
+                            $ref: "#/components/schemas/UserAccountBrief"
+                    application/xml:
+                        schema:
+                            $ref: "#/components/schemas/UserAccountBrief"
+            responses:
+                200:
+                    content:
+                        application/json:
+                            schema:
+                                $ref: "#/components/schemas/UserAccountBrief"
+                        application/xml:
+                            schema:
+                                $ref: "#/components/schemas/UserAccountBrief"
             tags: ["UserAccountBrief"]

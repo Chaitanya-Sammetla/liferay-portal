@@ -7,12 +7,10 @@ package com.liferay.portal.search.elasticsearch7.internal.search.engine.adapter.
 
 import com.liferay.portal.kernel.json.JSONObject;
 import com.liferay.portal.search.elasticsearch7.internal.connection.ElasticsearchClientResolver;
-import com.liferay.portal.search.elasticsearch7.internal.legacy.query.ElasticsearchQueryTranslator;
+import com.liferay.portal.search.elasticsearch7.internal.legacy.query.ElasticsearchQueryVisitor;
 import com.liferay.portal.search.elasticsearch7.internal.script.ScriptTranslator;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentRequest;
 import com.liferay.portal.search.engine.adapter.document.UpdateByQueryDocumentResponse;
-import com.liferay.portal.search.index.IndexNameBuilder;
-import com.liferay.portal.search.query.QueryTranslator;
 import com.liferay.portal.search.script.ScriptBuilder;
 import com.liferay.portal.search.script.ScriptType;
 import com.liferay.portal.search.script.Scripts;
@@ -28,7 +26,6 @@ import org.elasticsearch.index.query.QueryBuilder;
 import org.elasticsearch.index.reindex.BulkByScrollResponse;
 import org.elasticsearch.index.reindex.UpdateByQueryRequest;
 
-import org.osgi.service.component.annotations.Activate;
 import org.osgi.service.component.annotations.Component;
 import org.osgi.service.component.annotations.Reference;
 
@@ -55,12 +52,6 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 			bulkByScrollResponse.getUpdated(), timeValue.getMillis());
 	}
 
-	@Activate
-	protected void activate() {
-		_legacyQueryTranslator = new ElasticsearchQueryTranslator(
-			_indexNameBuilder);
-	}
-
 	protected UpdateByQueryRequest createUpdateByQueryRequest(
 		UpdateByQueryDocumentRequest updateByQueryDocumentRequest) {
 
@@ -70,15 +61,18 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 			updateByQueryDocumentRequest.getIndexNames());
 
 		if (updateByQueryDocumentRequest.getPortalSearchQuery() != null) {
-			QueryBuilder queryBuilder = _queryTranslator.translate(
-				updateByQueryDocumentRequest.getPortalSearchQuery());
+			QueryBuilder queryBuilder =
+				com.liferay.portal.search.elasticsearch7.internal.query.
+					ElasticsearchQueryVisitor.INSTANCE.translate(
+						updateByQueryDocumentRequest.getPortalSearchQuery());
 
 			updateByQueryRequest.setQuery(queryBuilder);
 		}
 		else {
 			@SuppressWarnings("deprecation")
-			QueryBuilder queryBuilder = _legacyQueryTranslator.translate(
-				updateByQueryDocumentRequest.getQuery(), null);
+			QueryBuilder queryBuilder =
+				ElasticsearchQueryVisitor.INSTANCE.translate(
+					updateByQueryDocumentRequest.getQuery());
 
 			updateByQueryRequest.setQuery(queryBuilder);
 		}
@@ -92,7 +86,7 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 					updateByQueryDocumentRequest.getScript()));
 		}
 		else if (updateByQueryDocumentRequest.getScriptJSONObject() != null) {
-			ScriptBuilder scriptBuilder = _scripts.builder();
+			ScriptBuilder scriptBuilder = Scripts.INSTANCE.builder();
 
 			JSONObject scriptJSONObject =
 				updateByQueryDocumentRequest.getScriptJSONObject();
@@ -147,18 +141,6 @@ public class UpdateByQueryDocumentRequestExecutorImpl
 
 	@Reference
 	private ElasticsearchClientResolver _elasticsearchClientResolver;
-
-	@Reference
-	private IndexNameBuilder _indexNameBuilder;
-
-	private com.liferay.portal.kernel.search.query.QueryTranslator<QueryBuilder>
-		_legacyQueryTranslator;
-	private final QueryTranslator<QueryBuilder> _queryTranslator =
-		new com.liferay.portal.search.elasticsearch7.internal.query.
-			ElasticsearchQueryTranslator();
-
-	@Reference
-	private Scripts _scripts;
 
 	private final ScriptTranslator _scriptTranslator = new ScriptTranslator();
 

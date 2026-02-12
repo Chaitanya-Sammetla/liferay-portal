@@ -24,6 +24,7 @@ import com.liferay.petra.string.StringPool;
 import com.liferay.portal.kernel.dao.db.DBInspector;
 import com.liferay.portal.kernel.dao.jdbc.DataAccess;
 import com.liferay.portal.kernel.dao.orm.QueryUtil;
+import com.liferay.portal.kernel.instance.PortalInstancePool;
 import com.liferay.portal.kernel.model.ClassName;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.ResourcePermission;
@@ -38,6 +39,7 @@ import com.liferay.portal.kernel.upgrade.data.cleanup.util.OrphanReferencesDataC
 import com.liferay.portal.kernel.util.ListUtil;
 import com.liferay.portal.kernel.util.Portal;
 import com.liferay.portal.kernel.util.PortalUtil;
+import com.liferay.portal.kernel.util.SetUtil;
 import com.liferay.portal.test.log.LogCapture;
 import com.liferay.portal.test.log.LoggerTestUtil;
 import com.liferay.portal.test.rule.Inject;
@@ -48,6 +50,7 @@ import java.sql.Connection;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
 import org.junit.After;
 import org.junit.AfterClass;
@@ -162,22 +165,10 @@ public class DDMDataCleanupPreupgradeProcessTest
 
 			_test(
 				() -> {
-					runSQL(
-						StringBundler.concat(
-							"insert into JournalArticle (",
-							"mvccVersion, ctCollectionId, id_, groupId, ",
-							"structureId) values (0, 0, ",
-							RandomTestUtil.nextLong(), ", ",
-							RandomTestUtil.nextLong(), ", '", structureId,
-							"')"));
-					runSQL(
-						StringBundler.concat(
-							"insert into JournalFeed (",
-							"mvccVersion, ctCollectionId, id_, groupId, ",
-							"structureId) values (0, 0, ",
-							RandomTestUtil.nextLong(), ", ",
-							RandomTestUtil.nextLong(), ", '", structureId,
-							"')"));
+					_insertJournalArticle(
+						0, 0, "structureId", "'" + structureId + "'");
+					_insertJournalFeed(
+						0, 0, "structureId", "'" + structureId + "'");
 				},
 				messages -> {
 					Assert.assertTrue(
@@ -212,22 +203,10 @@ public class DDMDataCleanupPreupgradeProcessTest
 
 			_test(
 				() -> {
-					runSQL(
-						StringBundler.concat(
-							"insert into JournalArticle (",
-							"mvccVersion, ctCollectionId, id_, groupId, ",
-							"DDMStructureKey) values (0, 0, ",
-							RandomTestUtil.nextLong(), ", ",
-							RandomTestUtil.nextLong(), ", '", structureId,
-							"')"));
-					runSQL(
-						StringBundler.concat(
-							"insert into JournalFeed (",
-							"mvccVersion, ctCollectionId, id_, groupId, ",
-							"DDMStructureKey) values (0, 0, ",
-							RandomTestUtil.nextLong(), ", ",
-							RandomTestUtil.nextLong(), ", '", structureId,
-							"')"));
+					_insertJournalArticle(
+						0, 0, "DDMStructureKey", "'" + structureId + "'");
+					_insertJournalFeed(
+						0, 0, "DDMStructureKey", "'" + structureId + "'");
 				},
 				messages -> {
 					Assert.assertTrue(
@@ -243,8 +222,8 @@ public class DDMDataCleanupPreupgradeProcessTest
 				});
 		}
 		finally {
-			alterTableDropColumn("JournalArticle", "structureId");
-			alterTableDropColumn("JournalFeed", "structureId");
+			alterTableDropColumn("JournalArticle", "DDMStructureKey");
+			alterTableDropColumn("JournalFeed", "DDMStructureKey");
 		}
 	}
 
@@ -254,20 +233,10 @@ public class DDMDataCleanupPreupgradeProcessTest
 
 		_test(
 			() -> {
-				runSQL(
-					StringBundler.concat(
-						"insert into JournalArticle (",
-						"mvccVersion, ctCollectionId, id_, groupId, ",
-						"DDMStructureId) values (0, 0, ",
-						RandomTestUtil.nextLong(), ", ",
-						RandomTestUtil.nextLong(), ", ", structureId, ")"));
-				runSQL(
-					StringBundler.concat(
-						"insert into JournalFeed (",
-						"mvccVersion, ctCollectionId, id_, groupId, ",
-						"DDMStructureId) values (0, 0, ",
-						RandomTestUtil.nextLong(), ", ",
-						RandomTestUtil.nextLong(), ", ", structureId, ")"));
+				_insertJournalArticle(
+					0, 0, "DDMStructureId", String.valueOf(structureId));
+				_insertJournalFeed(
+					0, 0, "DDMStructureId", String.valueOf(structureId));
 			},
 			messages -> {
 				Assert.assertTrue(
@@ -303,6 +272,90 @@ public class DDMDataCleanupPreupgradeProcessTest
 		_groupLocalService.deleteGroup(group);
 	}
 
+	@Test
+	public void testUpgradeWithOrphanNonancestorDDMStructureFrom70to73()
+		throws Exception {
+
+		connection = _connection;
+
+		String companyStructureKey = RandomTestUtil.randomString();
+		String orphanStructureKey = RandomTestUtil.randomString();
+		String parentStructureKey = RandomTestUtil.randomString();
+		long childGroupId = RandomTestUtil.nextLong();
+		long companyGroupId = RandomTestUtil.nextLong();
+		long companyId = RandomTestUtil.randomLong();
+		long orphanGroupId = RandomTestUtil.nextLong();
+		long otherGroupId = RandomTestUtil.nextLong();
+		long parentGroupId = RandomTestUtil.nextLong();
+
+		try {
+			alterTableAddColumn(
+				"JournalArticle", "DDMStructureKey", "VARCHAR(75) null");
+
+			_test(
+				DDMDataCleanupPreupgradeProcess.class.getName(),
+				() -> {
+					_insertGroup(
+						companyId, "/company", companyGroupId, "company", 0);
+					_insertGroup(
+						companyId, "/parent", parentGroupId, "parent", 0);
+					_insertGroup(
+						companyId, "/child", childGroupId, "child",
+						parentGroupId);
+					_insertGroup(companyId, "/other", otherGroupId, "other", 0);
+
+					_insertDDMStructure(
+						companyId, parentGroupId, parentStructureKey);
+					_insertDDMStructure(
+						companyId, companyGroupId, companyStructureKey);
+					_insertDDMStructure(
+						companyId, orphanGroupId, orphanStructureKey);
+
+					_insertJournalArticle(
+						companyId, childGroupId, "DDMStructureKey",
+						"'" + parentStructureKey + "'");
+					_insertJournalArticle(
+						companyId, otherGroupId, "DDMStructureKey",
+						"'" + companyStructureKey + "'");
+					_insertJournalArticle(
+						companyId, otherGroupId, "DDMStructureKey",
+						"'" + orphanStructureKey + "'");
+				},
+				messages -> {
+					Assert.assertFalse(
+						messages.toString(
+						).contains(
+							companyStructureKey
+						));
+					Assert.assertFalse(
+						messages.toString(
+						).contains(
+							parentStructureKey
+						));
+
+					Assert.assertTrue(
+						messages.contains(
+							StringBundler.concat(
+								"Table ",
+								_dbInspector.normalizeName("JournalArticle"),
+								", 1 row deleted because ",
+								_dbInspector.normalizeName("DDMStructureKey"),
+								StringPool.SPACE, orphanStructureKey,
+								" was not found in ",
+								_dbInspector.normalizeName("groupId"),
+								StringPool.SPACE, otherGroupId,
+								" or its ancestors")));
+				});
+		}
+		finally {
+			alterTableDropColumn("JournalArticle", "DDMStructureKey");
+
+			runSQL("delete from DDMStructure where companyId = " + companyId);
+			runSQL("delete from Group_ where companyId = " + companyId);
+			runSQL("delete from JournalArticle where companyId = " + companyId);
+		}
+	}
+
 	private String _getExpectedMessage(
 			long count, String sourceColumnName, String sourceTableName,
 			String targetColumnName, String targetTableName, Object targetValue)
@@ -317,14 +370,76 @@ public class DDMDataCleanupPreupgradeProcessTest
 			_dbInspector.normalizeName(targetTableName));
 	}
 
+	private void _insertDDMStructure(
+			long companyId, long groupId, String structureKey)
+		throws Exception {
+
+		runSQL(
+			StringBundler.concat(
+				"insert into DDMStructure (mvccVersion, ctCollectionId, ",
+				"uuid_, structureId, companyId, groupId, structureKey) values ",
+				"(0, 0, '", RandomTestUtil.randomString(), "', ",
+				RandomTestUtil.nextLong(), ", ", companyId, ", ", groupId,
+				", '", structureKey, "')"));
+	}
+
+	private void _insertGroup(
+			long companyId, String friendlyURL, long groupId, String groupKey,
+			long parentGroupId)
+		throws Exception {
+
+		runSQL(
+			StringBundler.concat(
+				"insert into Group_ (mvccVersion, ctCollectionId, uuid_, ",
+				"groupId, classPK, companyId, externalReferenceCode, ",
+				"friendlyURL, groupKey, name, parentGroupId) values (0, 0, '",
+				RandomTestUtil.randomString(), "', ", groupId, ", ",
+				RandomTestUtil.nextLong(), ", ", companyId, ", '",
+				RandomTestUtil.randomString(), "', '", friendlyURL, "', '",
+				groupKey, "', '", groupKey, "', ", parentGroupId, ")"));
+	}
+
+	private void _insertJournalArticle(
+			long companyId, long groupId, String structureColumnName,
+			String structureColumnValue)
+		throws Exception {
+
+		runSQL(
+			StringBundler.concat(
+				"insert into JournalArticle (mvccVersion, ctCollectionId, ",
+				"uuid_, id_, articleId, companyId, ", structureColumnName,
+				", externalReferenceCode, groupId, urlTitle, version) values ",
+				"(0, 0, '", RandomTestUtil.randomString(), "', ",
+				RandomTestUtil.nextLong(), ", '", RandomTestUtil.randomString(),
+				"', ", companyId, ", ", structureColumnValue, ", '",
+				RandomTestUtil.randomString(), "', ",
+				(groupId > 0) ? groupId : RandomTestUtil.nextLong(), ", '",
+				RandomTestUtil.randomString(), "', 1.0)"));
+	}
+
+	private void _insertJournalFeed(
+			long companyId, long groupId, String structureColumnName,
+			String structureColumnValue)
+		throws Exception {
+
+		runSQL(
+			StringBundler.concat(
+				"insert into JournalFeed (mvccVersion, ctCollectionId, uuid_, ",
+				"id_, companyId, ", structureColumnName, ", groupId) values ",
+				"(0, 0, '", RandomTestUtil.randomString(), "', ",
+				RandomTestUtil.nextLong(), ", ", companyId, ", ",
+				structureColumnValue, ", ",
+				(groupId > 0) ? groupId : RandomTestUtil.nextLong(), ")"));
+	}
+
 	private void _test(
+			String loggerName,
 			UnsafeRunnable<Exception> preupgradeUnsafeRunnable,
 			UnsafeConsumer<List<String>, Exception> verifyUnsafeConsumer)
 		throws Exception {
 
 		try (LogCapture logCapture = LoggerTestUtil.configureLog4JLogger(
-				OrphanReferencesDataCleanupUtil.class.getName(),
-				LoggerTestUtil.INFO)) {
+				loggerName, LoggerTestUtil.INFO)) {
 
 			preupgradeUnsafeRunnable.run();
 
@@ -332,6 +447,16 @@ public class DDMDataCleanupPreupgradeProcessTest
 
 			verifyUnsafeConsumer.accept(logCapture.getMessages());
 		}
+	}
+
+	private void _test(
+			UnsafeRunnable<Exception> preupgradeUnsafeRunnable,
+			UnsafeConsumer<List<String>, Exception> verifyUnsafeConsumer)
+		throws Exception {
+
+		_test(
+			OrphanReferencesDataCleanupUtil.class.getName(),
+			preupgradeUnsafeRunnable, verifyUnsafeConsumer);
 	}
 
 	private static List<ClassName> _classNames;

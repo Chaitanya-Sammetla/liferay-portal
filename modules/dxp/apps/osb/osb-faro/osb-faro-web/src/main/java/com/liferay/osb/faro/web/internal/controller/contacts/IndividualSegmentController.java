@@ -11,6 +11,7 @@ import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembership;
 import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembershipChange;
 import com.liferay.osb.faro.engine.client.model.IndividualSegmentMembershipChangeAggregation;
 import com.liferay.osb.faro.engine.client.model.IndividualSegmentRealTimeMembership;
+import com.liferay.osb.faro.engine.client.model.RealTimeMembershipMetric;
 import com.liferay.osb.faro.engine.client.model.Results;
 import com.liferay.osb.faro.engine.client.util.OrderByField;
 import com.liferay.osb.faro.model.FaroProject;
@@ -92,7 +93,7 @@ public class IndividualSegmentController extends BaseFaroController {
 			@FormParam("individualIds")
 			FaroParam
 				<List<String>> individualIdsFaroParam,
-			@FormParam("filter") String filter,
+			@FormParam("filter") String filterString,
 			@FormParam("includeAnonymousUsers") boolean includeAnonymousUsers,
 			@FormParam("name") String name,
 			@FormParam("segmentType") String segmentType)
@@ -101,7 +102,7 @@ public class IndividualSegmentController extends BaseFaroController {
 		validateCreate(channelId, segmentType);
 
 		return createIndividualSegment(
-			channelId, groupId, filter, includeAnonymousUsers, name,
+			channelId, groupId, filterString, includeAnonymousUsers, name,
 			segmentType);
 	}
 
@@ -228,12 +229,28 @@ public class IndividualSegmentController extends BaseFaroController {
 	}
 
 	@GET
+	@Path("/{id}/real-time-membership-metric")
+	@RolesAllowed(RoleConstants.SITE_MEMBER)
+	public RealTimeMembershipMetric getRealTimeMembershipMetric(
+			@PathParam("groupId") long groupId, @PathParam("id") String id)
+		throws Exception {
+
+		return contactsEngineClient.getRealTimeMembershipMetric(
+			faroProjectLocalService.getFaroProjectByGroupId(groupId), id);
+	}
+
+	@GET
 	@Path("/{id}/real-time-memberships")
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
 	@SuppressWarnings("unchecked")
 	public FaroResultsDisplay getRealTimeMemberships(
 			@PathParam("groupId") long groupId, @PathParam("id") String id,
-			@QueryParam("day") String day, @QueryParam("filter") String filter,
+			@QueryParam("day") String day,
+			@DefaultValue(StringPool.BLANK) @QueryParam("profileTypes")
+				FaroParam<List<String>> profileTypesFaroParam,
+			@QueryParam("query") String query,
+			@DefaultValue(StringPool.BLANK) @QueryParam("types") FaroParam
+				<List<String>> typesFaroParam,
 			@QueryParam("cur") int cur, @QueryParam("delta") int delta,
 			@DefaultValue(StringPool.BLANK) @QueryParam("orderByFields")
 				FaroParam<List<OrderByField>> orderByFieldsFaroParam)
@@ -242,7 +259,9 @@ public class IndividualSegmentController extends BaseFaroController {
 		Results<IndividualSegmentRealTimeMembership> results =
 			contactsEngineClient.getIndividualSegmentRealTimeMemberships(
 				faroProjectLocalService.getFaroProjectByGroupId(groupId), day,
-				filter, id, cur, delta, orderByFieldsFaroParam.getValue());
+				id, profileTypesFaroParam.getValue(), query,
+				typesFaroParam.getValue(), cur, delta,
+				orderByFieldsFaroParam.getValue());
 
 		return new FaroResultsDisplay(results);
 	}
@@ -309,7 +328,7 @@ public class IndividualSegmentController extends BaseFaroController {
 	@RolesAllowed(RoleConstants.SITE_MEMBER)
 	public IndividualSegmentDisplay update(
 			@PathParam("groupId") long groupId, @PathParam("id") String id,
-			@FormParam("filter") String filter,
+			@FormParam("filter") String filterString,
 			@FormParam("includeAnonymousUsers") boolean includeAnonymousUsers,
 			@DefaultValue(StringPool.BLANK) @FormParam("individualIds")
 				FaroParam<List<String>> individualIdsFaroParam,
@@ -325,11 +344,12 @@ public class IndividualSegmentController extends BaseFaroController {
 		validateUpdate(individualSegment);
 
 		return updateIndividualSegment(
-			groupId, individualSegment, filter, includeAnonymousUsers, name);
+			groupId, individualSegment, filterString, includeAnonymousUsers,
+			name);
 	}
 
 	protected IndividualSegmentDisplay createIndividualSegment(
-			String channelId, long groupId, String filter,
+			String channelId, long groupId, String filterString,
 			boolean includeAnonymousUsers, String name, String segmentType)
 		throws Exception {
 
@@ -338,7 +358,7 @@ public class IndividualSegmentController extends BaseFaroController {
 
 		return new IndividualSegmentDisplay(
 			contactsEngineClient.addIndividualSegment(
-				faroProject, getUserId(), channelId, filter,
+				faroProject, getUserId(), channelId, filterString,
 				includeAnonymousUsers, name, segmentType,
 				IndividualSegment.Status.ACTIVE.name()));
 	}
@@ -384,8 +404,8 @@ public class IndividualSegmentController extends BaseFaroController {
 	}
 
 	protected IndividualSegmentDisplay updateIndividualSegment(
-			long groupId, IndividualSegment individualSegment, String filter,
-			boolean includeAnonymousUsers, String name)
+			long groupId, IndividualSegment individualSegment,
+			String filterString, boolean includeAnonymousUsers, String name)
 		throws Exception {
 
 		FaroProject faroProject =
@@ -394,8 +414,9 @@ public class IndividualSegmentController extends BaseFaroController {
 		return new IndividualSegmentDisplay(
 			contactsEngineClient.updateIndividualSegment(
 				faroProject, individualSegment.getId(), getUserId(),
-				individualSegment.getChannelId(), filter, includeAnonymousUsers,
-				name, individualSegment.getSegmentType()));
+				individualSegment.getChannelId(), filterString,
+				includeAnonymousUsers, name,
+				individualSegment.getSegmentType()));
 	}
 
 	protected void updateMembership(
