@@ -1223,7 +1223,7 @@ public class DDMIndexerImpl implements DDMIndexer {
 			DDMForm ddmForm = ddmStructure.getFullHierarchyDDMForm(false);
 
 			List<DDMFormFieldValue> ddmFormFieldValues =
-				DDMFormValuesConverterUtil.getDDMFormFieldValues(
+				DDMFormValuesConverterUtil.addMissingDDMFormFieldValues(
 					ddmForm.getDDMFormFields(),
 					ddmFormValues.getDDMFormFieldValuesMap(true));
 
