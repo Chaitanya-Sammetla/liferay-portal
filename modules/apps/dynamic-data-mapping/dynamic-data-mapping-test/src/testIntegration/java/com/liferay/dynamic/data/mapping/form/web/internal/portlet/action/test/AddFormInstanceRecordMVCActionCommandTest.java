@@ -26,6 +26,7 @@ import com.liferay.portal.kernel.service.CompanyLocalService;
 import com.liferay.portal.kernel.service.LayoutSetLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
+import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionRequest;
 import com.liferay.portal.kernel.test.portlet.MockLiferayPortletActionResponse;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
@@ -34,6 +35,8 @@ import com.liferay.portal.kernel.test.util.RandomTestUtil;
 import com.liferay.portal.kernel.test.util.ServiceContextTestUtil;
 import com.liferay.portal.kernel.test.util.TestPropsValues;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.upload.LiferayFileItemException;
+import com.liferay.portal.kernel.upload.UploadException;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.TimeZoneUtil;
 import com.liferay.portal.kernel.util.WebKeys;
@@ -143,6 +146,53 @@ public class AddFormInstanceRecordMVCActionCommandTest {
 
 		_assertValue("TextField1", ddmFormFieldValuesMap, value1);
 		_assertValue("TextField2", ddmFormFieldValuesMap, value2);
+	}
+
+	@Test
+	public void testProcessActionWithExceededLiferayFileItemSizeLimit()
+		throws Exception {
+
+		DDMForm ddmForm = DDMFormTestUtil.createDDMForm(
+			DDMFormTestUtil.createAvailableLocales(LocaleUtil.US),
+			LocaleUtil.US);
+
+		DDMFormTestUtil.addTextDDMFormFields(ddmForm, "TextField1");
+
+		DDMFormInstance ddmFormInstance =
+			DDMFormInstanceTestUtil.addDDMFormInstance(
+				ddmForm, _group,
+				DDMFormInstanceTestUtil.createSettingsDDMFormValues(false),
+				TestPropsValues.getUserId());
+
+		_mockLiferayPortletActionRequest.addParameter(
+			"defaultLanguageId", "en_US");
+		_mockLiferayPortletActionRequest.addParameter(
+			"formInstanceId",
+			String.valueOf(ddmFormInstance.getFormInstanceId()));
+
+		UploadException uploadException = new UploadException();
+
+		uploadException.setExceededLiferayFileItemSizeLimit(true);
+
+		_mockLiferayPortletActionRequest.setAttribute(
+			WebKeys.UPLOAD_EXCEPTION, uploadException);
+
+		_addFormInstanceRecordMVCActionCommand.processAction(
+			_mockLiferayPortletActionRequest,
+			new MockLiferayPortletActionResponse());
+
+		Assert.assertTrue(
+			SessionErrors.contains(
+				_mockLiferayPortletActionRequest,
+				LiferayFileItemException.class));
+
+		List<DDMFormInstanceRecord> ddmFormInstanceRecords =
+			_ddmFormInstanceRecordLocalService.getFormInstanceRecords(
+				ddmFormInstance.getFormInstanceId());
+
+		Assert.assertEquals(
+			String.valueOf(ddmFormInstanceRecords), 0,
+			ddmFormInstanceRecords.size());
 	}
 
 	private void _assertValue(
