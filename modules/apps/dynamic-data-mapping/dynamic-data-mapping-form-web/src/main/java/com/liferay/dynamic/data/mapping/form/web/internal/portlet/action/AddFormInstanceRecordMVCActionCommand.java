@@ -42,6 +42,8 @@ import com.liferay.portal.kernel.service.ServiceContextFactory;
 import com.liferay.portal.kernel.servlet.SessionErrors;
 import com.liferay.portal.kernel.servlet.SessionMessages;
 import com.liferay.portal.kernel.theme.ThemeDisplay;
+import com.liferay.portal.kernel.upload.LiferayFileItemException;
+import com.liferay.portal.kernel.upload.UploadException;
 import com.liferay.portal.kernel.util.GetterUtil;
 import com.liferay.portal.kernel.util.LocaleUtil;
 import com.liferay.portal.kernel.util.ParamUtil;
@@ -80,6 +82,20 @@ public class AddFormInstanceRecordMVCActionCommand
 	protected void doProcessAction(
 			ActionRequest actionRequest, ActionResponse actionResponse)
 		throws Exception {
+
+		UploadException uploadException =
+			(UploadException)actionRequest.getAttribute(
+				WebKeys.UPLOAD_EXCEPTION);
+
+		if ((uploadException != null) &&
+			uploadException.isExceededLiferayFileItemSizeLimit()) {
+
+			SessionErrors.add(
+				actionRequest, LiferayFileItemException.class,
+				new LiferayFileItemException(uploadException.getCause()));
+
+			return;
+		}
 
 		PortletSession portletSession = actionRequest.getPortletSession();
 

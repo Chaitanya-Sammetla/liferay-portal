@@ -209,6 +209,8 @@ boolean limitToOneSubmissionPerUser = DDMFormInstanceSubmissionLimitStatusUtil.i
 							<liferay-ui:message key="<%= objectValidationRuleEngineException.getMessage() %>" />
 						</liferay-ui:error>
 
+						<liferay-ui:error exception="<%= LiferayFileItemException.class %>" message="upload-size-is-too-large" />
+
 						<liferay-ui:error exception="<%= StorageException.class %>" message="there-was-an-error-when-accessing-the-data-storage" />
 
 						<liferay-ui:error-principal />
