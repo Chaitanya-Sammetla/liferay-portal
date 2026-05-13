@@ -27,7 +27,13 @@ export function makeFetch({
 	}
 
 	return fetch(url, fetchData)
-		.then((response) => response.json())
+		.then((response) => {
+			if (!response.ok) {
+				return {statusCode: response.status};
+			}
+
+			return response.json();
+		})
 		.catch((error) => {
 			if (
 				Liferay.Session.sessionState === 'expired' ||

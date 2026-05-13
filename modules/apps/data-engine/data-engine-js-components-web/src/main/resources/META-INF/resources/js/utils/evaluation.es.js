@@ -182,7 +182,7 @@ const doEvaluate = debounce((fieldName, evaluatorContext, callback) => {
 	})
 		.then((newPages) => {
 			if (newPages.statusCode) {
-				callback(newPages);
+				return callback(newPages);
 			}
 
 			const mergedPages = mergePages(

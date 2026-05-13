@@ -5,7 +5,7 @@
 
 import '../../../css/main.scss';
 
-import {openModal} from 'frontend-js-components-web';
+import {openModal, openToast} from 'frontend-js-components-web';
 import {fetch} from 'frontend-js-web';
 import React, {
 	useCallback,
@@ -119,10 +119,28 @@ const useFormSubmit = ({apiRef, containerRef}) => {
 				.catch((error) => {
 					console.error(error);
 
-					Liferay.fire('ddmFormError', {
-						error,
-						formWrapperId: event.target.id,
-					});
+					const ddmFormSubmitButton =
+						document.getElementById('ddm-form-submit');
+
+					if (ddmFormSubmitButton) {
+						ddmFormSubmitButton.disabled = false;
+					}
+
+					if (error && error.statusCode === 413) {
+						openToast({
+							message: Liferay.Language.get(
+								'upload-size-is-too-large'
+							),
+							title: Liferay.Language.get('error'),
+							type: 'danger',
+						});
+					}
+					else {
+						Liferay.fire('ddmFormError', {
+							error,
+							formWrapperId: event.target.id,
+						});
+					}
 				});
 		},
 		[apiRef, containerRef, submittable, title]
