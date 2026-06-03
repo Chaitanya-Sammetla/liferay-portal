@@ -57,6 +57,40 @@ public class DDMFormValuesConverterUtil {
 		return newDDMFormFieldValues;
 	}
 
+	public static List<DDMFormFieldValue> getDDMFormFieldValues(
+		Collection<DDMFormField> ddmFormFields,
+		Map<String, List<DDMFormFieldValue>> ddmFormFieldValuesMap) {
+
+		List<DDMFormFieldValue> newDDMFormFieldValues = new ArrayList<>();
+
+		for (DDMFormField ddmFormField : ddmFormFields) {
+			List<DDMFormFieldValue> ddmFormFieldValues =
+				ddmFormFieldValuesMap.get(ddmFormField.getName());
+
+			if (ddmFormFieldValues == null) {
+				if (_isIndexable(ddmFormField)) {
+					DDMFormFieldValue ddmFormFieldValue =
+						_createDefaultDDMFormFieldValue(ddmFormField);
+
+					_populateNestedValues(
+						ddmFormField, ddmFormFieldValue, ddmFormFieldValuesMap);
+
+					newDDMFormFieldValues.add(ddmFormFieldValue);
+				}
+			}
+			else {
+				for (DDMFormFieldValue ddmFormFieldValue : ddmFormFieldValues) {
+					_populateNestedValues(
+						ddmFormField, ddmFormFieldValue, ddmFormFieldValuesMap);
+
+					newDDMFormFieldValues.add(ddmFormFieldValue);
+				}
+			}
+		}
+
+		return newDDMFormFieldValues;
+	}
+
 	private static DDMFormFieldValue _createDefaultDDMFormFieldValue(
 		DDMFormField ddmFormField) {
 
@@ -72,6 +106,28 @@ public class DDMFormValuesConverterUtil {
 		}
 
 		return ddmFormFieldValue;
+	}
+
+	private static boolean _isIndexable(DDMFormField ddmFormField) {
+		if (ddmFormField.isTransient()) {
+			for (DDMFormField nestedDDMFormField :
+					ddmFormField.getNestedDDMFormFields()) {
+
+				if (_isIndexable(nestedDDMFormField)) {
+					return true;
+				}
+			}
+
+			return false;
+		}
+
+		String indexType = ddmFormField.getIndexType();
+
+		if (!indexType.isEmpty() && !indexType.equals("none")) {
+			return true;
+		}
+
+		return false;
 	}
 
 	private static void _populateNestedValues(
