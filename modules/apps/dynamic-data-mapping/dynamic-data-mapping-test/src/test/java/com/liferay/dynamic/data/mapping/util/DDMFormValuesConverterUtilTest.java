@@ -97,6 +97,46 @@ public class DDMFormValuesConverterUtilTest extends BaseDDMTestCase {
 	}
 
 	@Test
+	public void testGetDDMFormFieldValuesWhenFieldIndexTypeIsNone() {
+		DDMFormField noneIndexTypeDDMFormField = createTextDDMFormField(
+			"Text1");
+
+		noneIndexTypeDDMFormField.setIndexType("none");
+
+		DDMFormField emptyIndexTypeDDMFormField = createTextDDMFormField(
+			"Text2");
+
+		List<DDMFormFieldValue> ddmFormFieldValues =
+			DDMFormValuesConverterUtil.getDDMFormFieldValues(
+				ListUtil.fromArray(
+					noneIndexTypeDDMFormField, emptyIndexTypeDDMFormField),
+				Collections.emptyMap());
+
+		Assert.assertTrue(
+			ddmFormFieldValues.toString(), ddmFormFieldValues.isEmpty());
+	}
+
+	@Test
+	public void testGetDDMFormFieldValuesWhenTransientNestedFieldIndexTypeIsNone() {
+		DDMFormField fieldsetDDMFormField = new DDMFormField(
+			"Fieldset1", DDMFormFieldTypeConstants.FIELDSET);
+
+		DDMFormField nestedDDMFormField = createTextDDMFormField("Text1");
+
+		nestedDDMFormField.setIndexType("none");
+
+		fieldsetDDMFormField.addNestedDDMFormField(nestedDDMFormField);
+
+		List<DDMFormFieldValue> ddmFormFieldValues =
+			DDMFormValuesConverterUtil.getDDMFormFieldValues(
+				Collections.singletonList(fieldsetDDMFormField),
+				Collections.emptyMap());
+
+		Assert.assertTrue(
+			ddmFormFieldValues.toString(), ddmFormFieldValues.isEmpty());
+	}
+
+	@Test
 	public void testRemoveExtraNestedDDMFormFieldValues() {
 		DDMFormField ddmFormField = new DDMFormField("Fieldset", "fieldset");
 
