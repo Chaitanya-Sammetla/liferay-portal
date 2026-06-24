@@ -106,8 +106,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * @author Juan Fernández
  * @author Chaitanya Sammetla
+ * @author Juan Fernández
  */
 @RunWith(Arquillian.class)
 @Sync(cleanTransaction = true)
@@ -565,10 +565,6 @@ public class JournalExportImportTest extends BasePortletExportImportTestCase {
 			ExportImportConfigurationParameterMapFactoryUtil.
 				buildParameterMap());
 
-		Layout liveLayout = LayoutLocalServiceUtil.getLayoutByUuidAndGroupId(
-			stagingLayout.getUuid(), _liveGroup.getGroupId(),
-			stagingLayout.isPrivateLayout());
-
 		DataDefinitionResource dataDefinitionResource =
 			_dataDefinitionResourceFactory.create(
 			).user(
@@ -608,6 +604,10 @@ public class JournalExportImportTest extends BasePortletExportImportTestCase {
 					article2
 				).toString()));
 
+		Layout liveLayout = LayoutLocalServiceUtil.getLayoutByUuidAndGroupId(
+			stagingLayout.getUuid(), _liveGroup.getGroupId(),
+			stagingLayout.isPrivateLayout());
+
 		StagingUtil.publishPortlet(
 			TestPropsValues.getUserId(), stagingGroup.getGroupId(),
 			_liveGroup.getGroupId(), stagingLayout.getPlid(),
@@ -615,15 +615,15 @@ public class JournalExportImportTest extends BasePortletExportImportTestCase {
 			ExportImportConfigurationParameterMapFactoryUtil.
 				buildParameterMap());
 
-		JournalArticle liveArticle1 =
-			JournalArticleLocalServiceUtil.fetchJournalArticleByUuidAndGroupId(
-				stagingArticle1.getUuid(), _liveGroup.getGroupId());
-
 		JournalArticle liveArticle2 =
 			JournalArticleLocalServiceUtil.fetchJournalArticleByUuidAndGroupId(
 				article2.getUuid(), _liveGroup.getGroupId());
 
 		String liveArticle2Content = liveArticle2.getContent();
+
+		JournalArticle liveArticle1 =
+			JournalArticleLocalServiceUtil.fetchJournalArticleByUuidAndGroupId(
+				stagingArticle1.getUuid(), _liveGroup.getGroupId());
 
 		Assert.assertTrue(
 			liveArticle2Content.contains(
