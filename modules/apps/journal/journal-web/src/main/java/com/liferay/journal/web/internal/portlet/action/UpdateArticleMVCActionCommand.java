@@ -14,7 +14,6 @@ import com.liferay.journal.constants.JournalPortletKeys;
 import com.liferay.journal.model.JournalArticle;
 import com.liferay.journal.service.JournalArticleLocalService;
 import com.liferay.journal.service.JournalArticleService;
-import com.liferay.journal.util.JournalContent;
 import com.liferay.journal.util.JournalConverter;
 import com.liferay.journal.util.JournalHelper;
 import com.liferay.journal.web.internal.asset.model.JournalArticleAssetRenderer;
@@ -33,6 +32,7 @@ import com.liferay.portal.kernel.portlet.PortletURLFactoryUtil;
 import com.liferay.portal.kernel.portlet.bridges.mvc.BaseMVCActionCommand;
 import com.liferay.portal.kernel.portlet.bridges.mvc.MVCActionCommand;
 import com.liferay.portal.kernel.portlet.url.builder.PortletURLBuilder;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.LayoutLocalService;
 import com.liferay.portal.kernel.service.ServiceContext;
 import com.liferay.portal.kernel.service.ServiceContextFactory;
@@ -138,14 +138,19 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 					layout, portletResource);
 
 			if (portletPreferences != null) {
-				String groupExternalReferenceCode =
-					_journalContent.getGroupExternalReferenceCode(
-						article.getGroupId(), layout, portletResource);
+				Group group = null;
 
-				if (Validator.isNotNull(groupExternalReferenceCode)) {
+				if ((article.getGroupId() != layout.getGroupId()) ||
+					(article.getGroupId() != _portal.getScopeGroupId(
+						layout, portletResource))) {
+
+					group = _groupLocalService.fetchGroup(article.getGroupId());
+				}
+
+				if (group != null) {
 					portletPreferences.setValue(
 						"groupExternalReferenceCode",
-						groupExternalReferenceCode);
+						group.getExternalReferenceCode());
 				}
 				else {
 					portletPreferences.reset("groupExternalReferenceCode");
@@ -607,13 +612,13 @@ public class UpdateArticleMVCActionCommand extends BaseMVCActionCommand {
 	private FriendlyURLNormalizer _friendlyURLNormalizer;
 
 	@Reference
+	private GroupLocalService _groupLocalService;
+
+	@Reference
 	private JournalArticleLocalService _journalArticleLocalService;
 
 	@Reference
 	private JournalArticleService _journalArticleService;
-
-	@Reference
-	private JournalContent _journalContent;
 
 	@Reference
 	private JournalConverter _journalConverter;
