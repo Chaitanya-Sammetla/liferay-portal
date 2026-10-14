@@ -238,7 +238,7 @@ public class JournalContentConfigurationActionTest {
 			new String[] {journalArticle1.getExternalReferenceCode()},
 			portletPreferencesMap.get("articleExternalReferenceCode"));
 		Assert.assertArrayEquals(
-			new String[] {StringPool.BLANK},
+			new String[] {scopeGroup.getExternalReferenceCode()},
 			portletPreferencesMap.get("groupExternalReferenceCode"));
 
 		JournalArticle journalArticle2 = JournalTestUtil.addArticle(

@@ -84,7 +84,8 @@ public class JournalContentPortletPreferencesUpdaterTest {
 		Assert.assertEquals(
 			journalArticle1.getExternalReferenceCode(),
 			portletPreferences.getValue("articleExternalReferenceCode", null));
-		Assert.assertNull(
+		Assert.assertEquals(
+			scopeGroup.getExternalReferenceCode(),
 			portletPreferences.getValue("groupExternalReferenceCode", null));
 
 		JournalArticle journalArticle2 = JournalTestUtil.addArticle(
@@ -120,7 +121,6 @@ public class JournalContentPortletPreferencesUpdaterTest {
 		ThemeDisplay themeDisplay = new ThemeDisplay();
 
 		themeDisplay.setLayout(_layout);
-		themeDisplay.setScopeGroupId(_group.getGroupId());
 
 		_portletPreferencesUpdater.updatePortletPreferences(
 			JournalArticle.class.getName(), journalArticle.getResourcePrimKey(),
