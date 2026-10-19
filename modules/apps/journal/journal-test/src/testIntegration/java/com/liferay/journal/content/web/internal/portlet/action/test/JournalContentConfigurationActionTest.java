@@ -208,6 +208,47 @@ public class JournalContentConfigurationActionTest {
 	}
 
 	@Test
+	public void testProcessActionWhenScopeIsCompany() throws Exception {
+		_companyJournalArticle = JournalTestUtil.addArticle(
+			_company.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		MockLiferayPortletActionRequest mockLiferayPortletActionRequest =
+			_getMockLiferayPortletActionRequest(
+				LayoutTestUtil.addPortletToLayout(
+					_layout, JournalContentPortletKeys.JOURNAL_CONTENT,
+					HashMapBuilder.put(
+						"lfrScopeType", new String[] {"company"}
+					).build()));
+
+		Map<String, String[]> portletPreferencesMap = _processAction(
+			_companyJournalArticle, mockLiferayPortletActionRequest);
+
+		Group companyGroup = _company.getGroup();
+
+		Assert.assertArrayEquals(
+			new String[] {_companyJournalArticle.getExternalReferenceCode()},
+			portletPreferencesMap.get("articleExternalReferenceCode"));
+		Assert.assertArrayEquals(
+			new String[] {companyGroup.getExternalReferenceCode()},
+			portletPreferencesMap.get("groupExternalReferenceCode"));
+
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		portletPreferencesMap = _processAction(
+			journalArticle, mockLiferayPortletActionRequest);
+
+		Assert.assertArrayEquals(
+			new String[] {journalArticle.getExternalReferenceCode()},
+			portletPreferencesMap.get("articleExternalReferenceCode"));
+		Assert.assertArrayEquals(
+			new String[] {_group.getExternalReferenceCode()},
+			portletPreferencesMap.get("groupExternalReferenceCode"));
+	}
+
+	@Test
 	public void testProcessActionWhenScopeIsPage() throws Exception {
 		Group scopeGroup = GroupTestUtil.addGroup(
 			TestPropsValues.getUserId(), _layout);

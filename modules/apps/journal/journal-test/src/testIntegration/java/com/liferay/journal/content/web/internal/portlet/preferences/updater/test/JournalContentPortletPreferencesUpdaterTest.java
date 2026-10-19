@@ -17,6 +17,7 @@ import com.liferay.layout.test.util.LayoutTestUtil;
 import com.liferay.portal.kernel.model.Group;
 import com.liferay.portal.kernel.model.Layout;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
+import com.liferay.portal.kernel.service.GroupLocalService;
 import com.liferay.portal.kernel.service.ServiceContextThreadLocal;
 import com.liferay.portal.kernel.test.rule.AggregateTestRule;
 import com.liferay.portal.kernel.test.rule.DeleteAfterTestRun;
@@ -29,6 +30,8 @@ import com.liferay.portal.test.rule.Inject;
 import com.liferay.portal.test.rule.LiferayIntegrationTestRule;
 
 import jakarta.portlet.PortletPreferences;
+
+import java.util.Map;
 
 import org.junit.After;
 import org.junit.Assert;
@@ -65,6 +68,46 @@ public class JournalContentPortletPreferencesUpdaterTest {
 	}
 
 	@Test
+	public void testUpdatePortletPreferencesWhenScopeIsCompany()
+		throws Exception {
+
+		Group companyGroup = _groupLocalService.getCompanyGroup(
+			_group.getCompanyId());
+
+		_companyJournalArticle = JournalTestUtil.addArticle(
+			companyGroup.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		Map<String, String[]> portletPreferencesMap = HashMapBuilder.put(
+			"lfrScopeType", new String[] {"company"}
+		).build();
+
+		PortletPreferences portletPreferences = _updatePortletPreferences(
+			_companyJournalArticle, portletPreferencesMap);
+
+		Assert.assertEquals(
+			_companyJournalArticle.getExternalReferenceCode(),
+			portletPreferences.getValue("articleExternalReferenceCode", null));
+		Assert.assertEquals(
+			companyGroup.getExternalReferenceCode(),
+			portletPreferences.getValue("groupExternalReferenceCode", null));
+
+		JournalArticle journalArticle = JournalTestUtil.addArticle(
+			_group.getGroupId(),
+			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
+
+		portletPreferences = _updatePortletPreferences(
+			journalArticle, portletPreferencesMap);
+
+		Assert.assertEquals(
+			journalArticle.getExternalReferenceCode(),
+			portletPreferences.getValue("articleExternalReferenceCode", null));
+		Assert.assertEquals(
+			_group.getExternalReferenceCode(),
+			portletPreferences.getValue("groupExternalReferenceCode", null));
+	}
+
+	@Test
 	public void testUpdatePortletPreferencesWhenScopeIsPage() throws Exception {
 		Group scopeGroup = GroupTestUtil.addGroup(
 			TestPropsValues.getUserId(), _layout);
@@ -78,8 +121,14 @@ public class JournalContentPortletPreferencesUpdaterTest {
 				DDMStructureTestUtil.getSampleStructuredContent(),
 				ddmStructure.getStructureKey(), null);
 
+		Map<String, String[]> portletPreferencesMap = HashMapBuilder.put(
+			"lfrScopeLayoutUuid", new String[] {_layout.getUuid()}
+		).put(
+			"lfrScopeType", new String[] {"layout"}
+		).build();
+
 		PortletPreferences portletPreferences = _updatePortletPreferences(
-			journalArticle1);
+			journalArticle1, portletPreferencesMap);
 
 		Assert.assertEquals(
 			journalArticle1.getExternalReferenceCode(),
@@ -92,7 +141,8 @@ public class JournalContentPortletPreferencesUpdaterTest {
 			_group.getGroupId(),
 			JournalFolderConstants.DEFAULT_PARENT_FOLDER_ID);
 
-		portletPreferences = _updatePortletPreferences(journalArticle2);
+		portletPreferences = _updatePortletPreferences(
+			journalArticle2, portletPreferencesMap);
 
 		Assert.assertEquals(
 			journalArticle2.getExternalReferenceCode(),
@@ -103,16 +153,13 @@ public class JournalContentPortletPreferencesUpdaterTest {
 	}
 
 	private PortletPreferences _updatePortletPreferences(
-			JournalArticle journalArticle)
+			JournalArticle journalArticle,
+			Map<String, String[]> portletPreferencesMap)
 		throws Exception {
 
 		String portletId = LayoutTestUtil.addPortletToLayout(
 			_layout, JournalContentPortletKeys.JOURNAL_CONTENT,
-			HashMapBuilder.put(
-				"lfrScopeLayoutUuid", new String[] {_layout.getUuid()}
-			).put(
-				"lfrScopeType", new String[] {"layout"}
-			).build());
+			portletPreferencesMap);
 
 		PortletPreferences portletPreferences =
 			PortletPreferencesFactoryUtil.getStrictPortletSetup(
@@ -130,7 +177,13 @@ public class JournalContentPortletPreferencesUpdaterTest {
 	}
 
 	@DeleteAfterTestRun
+	private JournalArticle _companyJournalArticle;
+
+	@DeleteAfterTestRun
 	private Group _group;
+
+	@Inject
+	private GroupLocalService _groupLocalService;
 
 	private Layout _layout;
 
