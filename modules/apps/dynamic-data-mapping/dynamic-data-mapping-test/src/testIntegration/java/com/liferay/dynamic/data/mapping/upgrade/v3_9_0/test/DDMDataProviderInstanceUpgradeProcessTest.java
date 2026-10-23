@@ -143,14 +143,12 @@ public class DDMDataProviderInstanceUpgradeProcessTest {
 
 	private void _runUpgrade() throws Exception {
 		UpgradeProcess upgradeProcess = UpgradeTestUtil.getUpgradeStep(
-			_upgradeStepRegistrator, _CLASS_NAME);
+			_upgradeStepRegistrator,
+			"com.liferay.dynamic.data.mapping.internal.upgrade.v3_9_0." +
+				"DDMDataProviderInstanceUpgradeProcess");
 
 		upgradeProcess.upgrade();
 	}
-
-	private static final String _CLASS_NAME =
-		"com.liferay.dynamic.data.mapping.internal.upgrade.v3_9_0." +
-			"DDMDataProviderInstanceUpgradeProcess";
 
 	@DeleteAfterTestRun
 	private DDMDataProviderInstance _ddmDataProviderInstance;

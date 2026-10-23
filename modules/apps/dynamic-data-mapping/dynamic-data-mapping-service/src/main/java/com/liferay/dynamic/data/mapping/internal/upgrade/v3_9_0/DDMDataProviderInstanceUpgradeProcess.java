@@ -88,9 +88,9 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 
 		Map<Locale, String> valuesMap = new HashMap<>(value.getValues());
 
-		for (Map.Entry<Locale, String> valueEntry : valuesMap.entrySet()) {
+		for (Map.Entry<Locale, String> entry : valuesMap.entrySet()) {
 			String[] valueStringParts = StringUtil.split(
-				valueEntry.getValue(), CharPool.SEMICOLON);
+				entry.getValue(), CharPool.SEMICOLON);
 
 			if ((valueStringParts.length != 2) ||
 				!Objects.equals(valueStringParts[1], "List")) {
@@ -99,7 +99,7 @@ public class DDMDataProviderInstanceUpgradeProcess extends UpgradeProcess {
 			}
 
 			value.addString(
-				valueEntry.getKey(),
+				entry.getKey(),
 				StringBundler.concat(
 					StringPool.DOLLAR, StringPool.DOUBLE_PERIOD,
 					valueStringParts[0]));
