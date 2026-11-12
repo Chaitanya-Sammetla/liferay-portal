@@ -118,12 +118,14 @@ public class PageSpecificationResourceTest
 
 	@Override
 	@Test
-	@TestInfo({"LPD-97472", "LPD-107120"})
+	@TestInfo({"LPD-97472", "LPD-107120", "LPD-115007"})
 	public void testDeleteSitePageSpecification() throws Exception {
 		ServiceContext serviceContext =
 			ServiceContextTestUtil.getServiceContext(
 				testGroup.getGroupId(), TestPropsValues.getUserId());
 
+		_testDeleteSitePageSpecificationWithLayoutLockedByNonownerUser(
+			serviceContext);
 		_testDeleteSitePageSpecificationWithLockedLayout(serviceContext);
 		_testDeleteSitePageSpecificationWithSupportedPageTypes(serviceContext);
 		_testDeleteSitePageSpecificationWithUnsupportedLayoutType(
@@ -997,6 +999,28 @@ public class PageSpecificationResourceTest
 		_layoutLocalService.updateStatus(
 			TestPropsValues.getUserId(), draftLayout.getPlid(),
 			WorkflowConstants.STATUS_DRAFT, serviceContext);
+
+		_assertDeleteSitePageSpecification(draftLayout);
+	}
+
+	private void _testDeleteSitePageSpecificationWithLayoutLockedByNonownerUser(
+			ServiceContext serviceContext)
+		throws Exception {
+
+		Layout layout = _addLayout(
+			LayoutConstants.TYPE_CONTENT, serviceContext);
+
+		Layout draftLayout = layout.fetchDraftLayout();
+
+		User user = UserTestUtil.addUser();
+
+		draftLayout.setUserId(user.getUserId());
+
+		draftLayout.setStatus(WorkflowConstants.STATUS_DRAFT);
+
+		draftLayout = _layoutLocalService.updateLayout(draftLayout);
+
+		_layoutLockManager.getLock(draftLayout, TestPropsValues.getUserId());
 
 		_assertDeleteSitePageSpecification(draftLayout);
 	}
