@@ -60,7 +60,7 @@ import com.liferay.portal.kernel.module.service.Snapshot;
 import com.liferay.portal.kernel.portlet.PortletIdCodec;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactory;
 import com.liferay.portal.kernel.portlet.PortletPreferencesFactoryUtil;
-import com.liferay.portal.kernel.security.auth.GuestOrUserUtil;
+import com.liferay.portal.kernel.security.auth.PrincipalThreadLocal;
 import com.liferay.portal.kernel.service.ImageLocalService;
 import com.liferay.portal.kernel.service.PortletLocalService;
 import com.liferay.portal.kernel.service.PortletPreferencesLocalService;
@@ -222,7 +222,8 @@ public class LayoutLocalServiceWrapper
 
 			CopyLayoutThreadLocal.setCopyLayout(true);
 
-			User user = _getUser(0, 0, currentServiceContext);
+			User user = _getUser(
+				layout.getCompanyId(), 0, 0, currentServiceContext);
 
 			if ((currentServiceContext == null) ||
 				(currentServiceContext.getUserId() != user.getUserId())) {
@@ -402,8 +403,8 @@ public class LayoutLocalServiceWrapper
 			CopyLayoutThreadLocal.setCopyLayout(true);
 
 			User user = _getUser(
-				sourceLayout.getUserId(), targetLayout.getUserId(),
-				currentServiceContext);
+				targetLayout.getCompanyId(), sourceLayout.getUserId(),
+				targetLayout.getUserId(), currentServiceContext);
 
 			if ((currentServiceContext == null) ||
 				(currentServiceContext.getUserId() != user.getUserId())) {
@@ -1312,9 +1313,27 @@ public class LayoutLocalServiceWrapper
 	}
 
 	private User _getUser(
-			long sourceLayoutUserId, long targetLayoutUserId,
+			long companyId, long sourceLayoutUserId, long targetLayoutUserId,
 			ServiceContext serviceContext)
 		throws PortalException {
+
+		long principalUserId = PrincipalThreadLocal.getUserId();
+
+		if (principalUserId > 0) {
+			User user = _userLocalService.fetchUser(principalUserId);
+
+			if (_isCompanyNonguestUser(companyId, user)) {
+				return user;
+			}
+		}
+
+		if (serviceContext != null) {
+			User user = serviceContext.fetchUser();
+
+			if (_isCompanyNonguestUser(companyId, user)) {
+				return user;
+			}
+		}
 
 		User user = null;
 
@@ -1334,15 +1353,7 @@ public class LayoutLocalServiceWrapper
 			return user;
 		}
 
-		if (serviceContext != null) {
-			user = serviceContext.fetchUser();
-		}
-
-		if (user != null) {
-			return user;
-		}
-
-		return GuestOrUserUtil.getGuestOrUser();
+		return _userLocalService.getGuestUser(companyId);
 	}
 
 	private boolean _hasLayoutClassedModelUsage(
@@ -1364,6 +1375,16 @@ public class LayoutLocalServiceWrapper
 
 				return true;
 			}
+		}
+
+		return false;
+	}
+
+	private boolean _isCompanyNonguestUser(long companyId, User user) {
+		if ((user != null) && !user.isGuestUser() &&
+			(user.getCompanyId() == companyId)) {
+
+			return true;
 		}
 
 		return false;
