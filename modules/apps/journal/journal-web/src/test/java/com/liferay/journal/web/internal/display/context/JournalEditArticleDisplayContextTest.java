@@ -565,7 +565,7 @@ public class JournalEditArticleDisplayContextTest {
 			_createDDMFormFieldValue("[]"), _createDDMFormFieldValue("[\"\"]"),
 			_createDDMFormFieldValue("{}"),
 			_createDDMFormFieldValue(
-				"{\"description\":\"\",\"title\":\"\",\"url\":\"\"}"),
+				"{\"description\": \"\", \"title\": \"\", \"url\": \"\"}"),
 			fieldSetDDMFormFieldValue);
 
 		JournalEditArticleDisplayContext journalEditArticleDisplayContext =
